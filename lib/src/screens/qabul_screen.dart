@@ -58,6 +58,19 @@ class QabulScreen extends StatelessWidget {
                   style: const TextStyle(fontSize: 19, height: 1.45, color: Color(0xFF7A5B12)),
                 ),
               ),
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  t.lawRef,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontStyle: FontStyle.italic,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.muted,
+                  ),
+                ),
+              ),
             ],
           ),
         ),

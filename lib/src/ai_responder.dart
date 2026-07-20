@@ -17,9 +17,15 @@ class AiResponder {
 
   /// Returns the best answer for [question] in [lang], or the localized
   /// offline fallback when nothing matches well enough.
-  String answer(String question, Lang lang) {
+  String answer(String question, Lang lang) =>
+      match(question, lang) ?? Tr(lang).aiOffline;
+
+  /// The best local answer for [question], or null when nothing in the kiosk's
+  /// own knowledge base matches well enough. Callers that have a backend can
+  /// use null as the signal to ask it instead of showing the offline text.
+  String? match(String question, Lang lang) {
     final q = _tokens(question);
-    if (q.isEmpty) return Tr(lang).aiOffline;
+    if (q.isEmpty) return null;
 
     String? best;
     var bestScore = 0.0;
@@ -47,6 +53,6 @@ class AiResponder {
     }
 
     if (best != null && bestScore >= 0.35) return best!;
-    return Tr(lang).aiOffline;
+    return null;
   }
 }

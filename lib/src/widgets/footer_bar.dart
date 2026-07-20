@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 
 import '../config.dart';
@@ -22,45 +24,70 @@ class FooterBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Tr(lang);
-    Widget dot() => Text('·',
-        style: TextStyle(color: palette.footerDot, fontWeight: FontWeight.w600));
+    Widget dot() => Text(
+      '·',
+      style: TextStyle(color: palette.footerDot, fontWeight: FontWeight.w600),
+    );
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-      decoration: BoxDecoration(
-        color: palette.footerBg,
-        border: Border(top: BorderSide(color: palette.headerBorder)),
-      ),
-      child: Row(
-        children: [
-          // Leading spacer balances the trailing exit button so the info row
-          // stays visually centred.
-          const SizedBox(width: 38),
-          Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(KioskConfig.orgName,
-                    style: TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.w600, color: palette.footerText)),
-                const SizedBox(width: 12),
-                dot(),
-                const SizedBox(width: 12),
-                Text(KioskConfig.orgPhone,
-                    style: TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.w600, color: palette.footerText)),
-                const SizedBox(width: 12),
-                dot(),
-                const SizedBox(width: 12),
-                Text(t.footerHint,
-                    style: TextStyle(
-                        fontSize: 15, fontWeight: FontWeight.w600, color: palette.footerHint)),
-              ],
-            ),
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
+          decoration: BoxDecoration(
+            color: palette.footerBg,
+            border: Border(top: BorderSide(color: palette.headerBorder)),
           ),
-          ExitButton(onTap: onExit),
-        ],
+          child: Row(
+            children: [
+              // Leading spacer balances the trailing exit button so the info
+              // row stays visually centred.
+              const SizedBox(width: 38),
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        KioskConfig.orgShortName[lang]!,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: palette.footerText,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      dot(),
+                      const SizedBox(width: 12),
+                      Text(
+                        KioskConfig.orgPhone,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: palette.footerText,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      dot(),
+                      const SizedBox(width: 12),
+                      Text(
+                        t.footerHint,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: palette.footerHint,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              ExitButton(onTap: onExit),
+            ],
+          ),
+        ),
       ),
     );
   }

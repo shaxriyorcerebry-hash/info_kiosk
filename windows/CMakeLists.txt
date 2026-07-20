@@ -32,6 +32,11 @@ set(CMAKE_CXX_FLAGS_PROFILE "${CMAKE_CXX_FLAGS_RELEASE}")
 # Use Unicode for all projects.
 add_definitions(-DUNICODE -D_UNICODE)
 
+# webview_windows still includes <experimental/coroutine>, which MSVC 14.51+
+# turns into a hard error (STL1011) unless this is defined. Set at project
+# level so it reaches the plugin subdirectories added further down.
+add_definitions(-D_SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
+
 # Compilation settings that should be applied to most targets.
 #
 # Be cautious about adding new options here, as plugins use this function by
@@ -106,3 +111,18 @@ install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
 install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   CONFIGURATIONS Profile;Release
   COMPONENT Runtime)
+
+# Bundle the Visual C++ runtime next to the executable so the kiosk runs on a
+# clean machine that has never had the VC++ redistributable installed —
+# otherwise it fails to launch with "VCRUNTIME140_1.dll not found". Flutter
+# does not copy these itself, so we ask CMake's built-in module for the exact
+# set the toolchain links against and install them with the app.
+set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP ON)   # we place them ourselves
+set(CMAKE_INSTALL_UCRT_LIBRARIES OFF)            # UCRT ships with Windows 10+
+include(InstallRequiredSystemLibraries)
+if(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS)
+  install(FILES ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS}
+    DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
+    CONFIGURATIONS Profile;Release
+    COMPONENT Runtime)
+endif()

@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
+version: 1.4.0+6
 
 environment:
   sdk: ^3.12.2
@@ -32,10 +32,17 @@ dependencies:
     sdk: flutter
 
   # Native-window control for kiosk mode (fullscreen, prevent-close) and keeping
-  # the display awake. These are the only two runtime dependencies — the UI is
-  # built entirely from the Flutter/Material SDK.
+  # the display awake. The UI itself is built entirely from the Flutter/Material
+  # SDK — these are the only packages the kiosk pulls in.
   window_manager: ^0.5.2
   wakelock_plus: ^1.6.1
+
+  # Hosts an off-screen Edge WebView2 that runs the Gemini Live voice session.
+  # Flutter Windows can neither capture the microphone nor play a raw PCM
+  # stream, but the browser engine does both — the same approach the avatar
+  # kiosk uses. Optional at runtime: if WebView2 is missing the kiosk falls
+  # back to the offline SAPI bridge.
+  webview_windows: ^0.4.0
 
 dev_dependencies:
   flutter_test:
@@ -60,7 +67,11 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/qabulxona_icon.jpg
+    - assets/images/xalq_qabulxona_icon.png
+    - assets/images/office_map.png
+    # Google GenAI browser SDK, bundled so the voice page never fetches from a
+    # CDN (the kiosk only ever talks to the backend and Gemini itself).
+    - assets/web/genai.min.js
 
   # To add assets to your application, add an assets section, like this:
   # assets:

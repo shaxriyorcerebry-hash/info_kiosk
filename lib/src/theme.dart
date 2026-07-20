@@ -70,14 +70,14 @@ class Palette {
   final Color titleColor;
 
   static const Palette light = Palette(
-    headerBg: Color(0xF2FFFFFF),
+    headerBg: Color(0xD6FFFFFF),
     headerBorder: Color(0x1F1E4B8F),
     headMain: Color(0xFF1E4B8F),
     headSub: Color(0xFF5B7699),
     langTray: Color(0x121E4B8F),
     langTrayBorder: Color(0x1A1E4B8F),
     langInactive: Color(0xFF4A6892),
-    footerBg: Color(0x99FFFFFF),
+    footerBg: Color(0x8CFFFFFF),
     footerText: Color(0xFF5B7699),
     footerHint: Color(0xFF2563EB),
     footerDot: Color(0xFFB9CCE4),
@@ -89,14 +89,14 @@ class Palette {
   );
 
   static const Palette aiDark = Palette(
-    headerBg: Color(0xD109142A),
+    headerBg: Color(0xA609142A),
     headerBorder: Color(0x2E78A0DC),
     headMain: Color(0xFFEAF2FB),
     headSub: Color(0xFF93BCEA),
     langTray: Color(0x14FFFFFF),
     langTrayBorder: Color(0x24FFFFFF),
     langInactive: Color(0xFFAEC6E8),
-    footerBg: Color(0xD909142A),
+    footerBg: Color(0xA609142A),
     footerText: Color(0xFF93BCEA),
     footerHint: Color(0xFF6FA8E8),
     footerDot: Color(0xFF3A5580),

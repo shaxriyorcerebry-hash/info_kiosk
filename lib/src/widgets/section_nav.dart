@@ -2,20 +2,26 @@ import 'package:flutter/material.dart';
 
 import '../l10n.dart';
 import '../theme.dart';
+import 'pressable.dart';
 
 /// The "back / home + section title" bar shown on every non-home screen.
+///
+/// The back button pops exactly one navigation level (sub-page → section →
+/// home); the home button always returns straight to the landing screen.
 class SectionNav extends StatelessWidget {
   const SectionNav({
     super.key,
     required this.title,
     required this.palette,
     required this.lang,
+    required this.onBack,
     required this.onGoHome,
   });
 
   final String title;
   final Palette palette;
   final Lang lang;
+  final VoidCallback onBack;
   final VoidCallback onGoHome;
 
   @override
@@ -27,7 +33,7 @@ class SectionNav extends StatelessWidget {
         children: [
           _NavButton(
             palette: palette,
-            onTap: onGoHome,
+            onTap: onBack,
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -88,8 +94,9 @@ class _NavButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return Pressable(
       onTap: onTap,
+      pressedScale: 0.93,
       child: Container(
         height: 54,
         width: circle ? 54 : null,
@@ -98,7 +105,7 @@ class _NavButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: palette.navBg,
           border: Border.all(color: palette.navBorder, width: 1.5),
-          borderRadius: BorderRadius.circular(circle ? 27 : 27),
+          borderRadius: BorderRadius.circular(27),
         ),
         child: child,
       ),

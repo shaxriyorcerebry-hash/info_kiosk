@@ -1,59 +1,147 @@
+import 'dart:math' as math;
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 
 import '../data.dart';
 import '../kiosk_state.dart';
 import '../l10n.dart';
+import '../screen.dart';
 import '../theme.dart';
+import '../widgets/pressable.dart';
 
-/// Landing grid — one tappable card per section.
-class HomeScreen extends StatelessWidget {
+/// Per-card accent gradient — a restrained, official palette drawn from the
+/// state emblem colours (blues, teal, gold, green), blue-led throughout.
+const Map<Screen, List<Color>> _accents = {
+  Screen.qabul: [Color(0xFF1E4B8F), Color(0xFF2563EB)],
+  Screen.jadval: [Color(0xFF0E7490), Color(0xFF0891B2)],
+  Screen.masalalar: [Color(0xFF7C5A12), Color(0xFFA9791C)],
+  Screen.faq: [Color(0xFF0369A1), Color(0xFF0284C7)],
+  Screen.ai: [Color(0xFF1D4ED8), Color(0xFF3B82F6)],
+  Screen.contact: [Color(0xFF047857), Color(0xFF059669)],
+};
+
+/// Landing grid — one tappable card per section, entering with a soft
+/// staggered rise the first time the home screen appears.
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.state});
 
   final KioskState state;
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _enter = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1100),
+  )..forward();
+
+  @override
+  void dispose() {
+    _enter.dispose();
+    super.dispose();
+  }
+
+  Animation<double> _slot(int i) {
+    final start = (0.06 * i).clamp(0.0, 0.6);
+    return CurvedAnimation(
+      parent: _enter,
+      curve: Interval(
+        start,
+        (start + 0.45).clamp(0.0, 1.0),
+        curve: Curves.easeOutCubic,
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final lang = state.lang;
+    final lang = widget.state.lang;
     final t = Tr(lang);
+    return LayoutBuilder(
+      builder: (context, box) {
+        // The kiosk is a large portrait touch panel: the grid is laid out
+        // for 2 columns x 6 rows. Card height is derived from the viewport
+        // so that a full 12-card set would exactly fill the screen — the
+        // current 8 cards simply occupy the first four rows at that same
+        // size. On landscape (development) windows, fall back to the
+        // fixed-width wrap with natural heights.
+        final portrait = box.maxHeight > box.maxWidth;
+        final gridWidth = portrait
+            ? box.maxWidth - 64
+            : math.min(box.maxWidth - 64, 1560.0);
+        final cardWidth = portrait ? (gridWidth - 26) / 2 : 440.0;
+        // ~175px of chrome above the grid (paddings + title block) and five
+        // 26px row gaps between six rows.
+        final cardHeight = portrait
+            ? ((box.maxHeight - 175 - 5 * 26) / 6).clamp(190.0, 320.0)
+            : null;
+        return _buildScroll(t, lang, gridWidth, cardWidth, cardHeight);
+      },
+    );
+  }
+
+  Widget _buildScroll(
+    Tr t,
+    Lang lang,
+    double gridWidth,
+    double cardWidth,
+    double? cardHeight,
+  ) {
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(32, 24, 32, 32),
       child: Column(
         children: [
           const SizedBox(height: 18),
-          Text(
-            t.homeTitle,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 38,
-              fontWeight: FontWeight.w800,
-              color: AppColors.primaryDark,
-              letterSpacing: 0.2,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            width: 76,
-            height: 5,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(3),
-              gradient: const LinearGradient(
-                colors: [AppColors.primary, Color(0xFF7FB2E8)],
-              ),
+          FadeTransition(
+            opacity: _slot(0),
+            child: Column(
+              children: [
+                Text(
+                  t.homeTitle,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 38,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primaryDark,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  width: 76,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(3),
+                    gradient: const LinearGradient(
+                      colors: [AppColors.primary, Color(0xFF7FB2E8)],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 34),
           ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1560),
+            constraints: BoxConstraints(maxWidth: gridWidth),
             child: Wrap(
               spacing: 26,
               runSpacing: 26,
               alignment: WrapAlignment.center,
               children: [
-                for (final card in AppData.cards)
-                  _HomeCard(
-                    card: card,
-                    lang: lang,
-                    onTap: () => state.open(card.id),
+                for (var i = 0; i < AppData.cards.length; i++)
+                  _RisingIn(
+                    animation: _slot(i + 1),
+                    child: _HomeCard(
+                      card: AppData.cards[i],
+                      lang: lang,
+                      width: cardWidth,
+                      height: cardHeight,
+                      onTap: () => widget.state.open(AppData.cards[i].id),
+                    ),
                   ),
               ],
             ),
@@ -64,11 +152,44 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
+/// Fade + rise entrance used for the staggered card cascade.
+class _RisingIn extends StatelessWidget {
+  const _RisingIn({required this.animation, required this.child});
+
+  final Animation<double> animation;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: animation,
+      builder: (context, c) => Opacity(
+        opacity: animation.value,
+        child: Transform.translate(
+          offset: Offset(0, 36 * (1 - animation.value)),
+          child: c,
+        ),
+      ),
+      child: child,
+    );
+  }
+}
+
 class _HomeCard extends StatefulWidget {
-  const _HomeCard({required this.card, required this.lang, required this.onTap});
+  const _HomeCard({
+    required this.card,
+    required this.lang,
+    required this.width,
+    required this.height,
+    required this.onTap,
+  });
 
   final CardDef card;
   final Lang lang;
+  final double width;
+
+  /// Fixed height in the portrait 2x6 grid; null lets the card size itself.
+  final double? height;
   final VoidCallback onTap;
 
   @override
@@ -80,79 +201,168 @@ class _HomeCardState extends State<_HomeCard> {
 
   @override
   Widget build(BuildContext context) {
+    final accent = _accents[widget.card.id]!;
+    // Compact metrics when the fixed row height gets tight.
+    final compact = widget.height != null && widget.height! < 230;
+    final iconSize = compact ? 72.0 : 88.0;
     return MouseRegion(
       onEnter: (_) => setState(() => _hover = true),
       onExit: (_) => setState(() => _hover = false),
       cursor: SystemMouseCursors.click,
-      child: GestureDetector(
+      child: Pressable(
         onTap: widget.onTap,
+        pressedScale: 0.965,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOutCubic,
           transform: Matrix4.translationValues(0, _hover ? -8 : 0, 0),
-          width: 440,
-          constraints: const BoxConstraints(minHeight: 212),
-          padding: const EdgeInsets.fromLTRB(30, 30, 30, 26),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.68),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.85)),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF1E4B8F).withValues(alpha: _hover ? 0.16 : 0.10),
+                color: accent.first.withValues(alpha: _hover ? 0.22 : 0.12),
                 blurRadius: _hover ? 56 : 40,
                 offset: Offset(0, _hover ? 28 : 16),
               ),
             ],
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 88,
-                    height: 88,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [Colors.white, Color(0xFFDBEAFE)],
-                      ),
-                      border: Border.all(color: const Color(0x2E2563EB)),
-                    ),
-                    child: Icon(widget.card.icon, size: 42, color: AppColors.primary),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+              child: Container(
+                width: widget.width,
+                height: widget.height,
+                constraints: widget.height == null
+                    ? const BoxConstraints(minHeight: 212)
+                    : null,
+                padding: EdgeInsets.fromLTRB(
+                  compact ? 24 : 30,
+                  compact ? 20 : 30,
+                  compact ? 24 : 30,
+                  compact ? 18 : 26,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.52),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.75),
                   ),
-                  const SizedBox(width: 20),
-                  Expanded(
-                    child: Text(
-                      widget.card.title[widget.lang]!,
-                      style: const TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.primaryDark,
-                        height: 1.2,
-                      ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: iconSize,
+                          height: iconSize,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(
+                              compact ? 20 : 26,
+                            ),
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: accent,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: accent.first.withValues(alpha: 0.38),
+                                blurRadius: 18,
+                                offset: const Offset(0, 8),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            widget.card.icon,
+                            size: compact ? 34 : 42,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 20),
+                        Expanded(
+                          child: Text(
+                            widget.card.title[widget.lang]!,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: compact ? 23 : 26,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primaryDark,
+                              height: 1.2,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                widget.card.desc[widget.lang]!,
-                style: const TextStyle(
-                  fontSize: 19,
-                  color: Color(0xFF5B7699),
-                  fontWeight: FontWeight.w500,
-                  height: 1.45,
+                    SizedBox(height: compact ? 10 : 16),
+                    _BottomRow(
+                      expand: widget.height != null,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            widget.card.desc[widget.lang]!,
+                            maxLines: compact ? 2 : 3,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: compact ? 17 : 19,
+                              color: const Color(0xFF5B7699),
+                              fontWeight: FontWeight.w500,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          width: 44,
+                          height: 44,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _hover
+                                ? accent.first
+                                : accent.first.withValues(alpha: 0.10),
+                          ),
+                          child: Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 24,
+                            color: _hover ? Colors.white : accent.first,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Bottom row of a home card. In the fixed-height portrait grid it expands
+/// so the description and arrow sit pinned to the card's bottom edge; in the
+/// natural-height layout it is a plain row.
+class _BottomRow extends StatelessWidget {
+  const _BottomRow({required this.expand, required this.children});
+
+  final bool expand;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final row = Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: children,
+    );
+    if (!expand) return row;
+    return Expanded(
+      child: Align(alignment: Alignment.bottomLeft, child: row),
     );
   }
 }

@@ -12,6 +12,9 @@
 .swiftpm/
 migrate_working_dir/
 
+# Release artifacts — built zips belong on GitHub Releases, not in git history.
+/dist/
+
 # IntelliJ related
 *.iml
 *.ipr

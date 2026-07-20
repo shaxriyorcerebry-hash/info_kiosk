@@ -1,9 +1,12 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
 
-/// The standard white, rounded, softly-shadowed panel used throughout the
-/// content screens.
+/// The standard rounded, softly-shadowed panel used throughout the content
+/// screens — frosted glass over the animated backdrop, in keeping with the
+/// kiosk's transparency-led look.
 class InfoCard extends StatelessWidget {
   const InfoCard({
     super.key,
@@ -17,11 +20,8 @@ class InfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: padding,
       decoration: BoxDecoration(
-        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.cardBorder),
         boxShadow: const [
           BoxShadow(
             color: Color(0x140D3B73),
@@ -30,7 +30,21 @@ class InfoCard extends StatelessWidget {
           ),
         ],
       ),
-      child: child,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+          child: Container(
+            padding: padding,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.78),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.cardBorder),
+            ),
+            child: child,
+          ),
+        ),
+      ),
     );
   }
 }

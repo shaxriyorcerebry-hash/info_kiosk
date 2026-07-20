@@ -12,6 +12,18 @@ class CardDef {
   final Map<Lang, String> desc;
 }
 
+/// An official receiving citizens in person at the People's Reception:
+/// full name (Latin, with a Cyrillic variant shown for Russian), localised
+/// position, weekly reception slot and contact phone.
+class QabulOfficial {
+  const QabulOfficial(this.name, this.position, this.day, this.time, this.phone);
+  final Map<Lang, String> name;
+  final Map<Lang, String> position;
+  final Map<Lang, String> day;
+  final String time;
+  final String phone;
+}
+
 /// All localised, office-agnostic content shown by the kiosk.
 class AppData {
   const AppData._();
@@ -31,27 +43,18 @@ class AppData {
       Lang.ru: 'Режим работы и график приёма',
       Lang.en: 'Hours & reception schedule',
     }, {
-      Lang.uz: 'Rahbariyat qabul kunlari va soatlari',
-      Lang.ru: 'Дни и часы приёма руководства',
-      Lang.en: 'Leadership reception days and hours',
+      Lang.uz: "Shaxsiy qabul va sayyor qabul bo'limlari",
+      Lang.ru: 'Личный приём граждан и выездной приём',
+      Lang.en: 'In-person and mobile reception sections',
     }),
-    CardDef(Screen.bolimlar, Icons.apartment_outlined, {
-      Lang.uz: "Bo'limlar va xodimlar",
-      Lang.ru: 'Отделы и сотрудники',
-      Lang.en: 'Departments & staff',
+    CardDef(Screen.masalalar, Icons.account_balance_outlined, {
+      Lang.uz: 'Tashkilot va masalalar',
+      Lang.ru: 'Организации и вопросы',
+      Lang.en: 'Organisations & issues',
     }, {
-      Lang.uz: "Bo'limlar, mas'ul shaxslar, xona va telefon raqamlari",
-      Lang.ru: 'Отделы, ответственные лица, кабинеты и телефоны',
-      Lang.en: 'Departments, responsible persons, rooms and phones',
-    }),
-    CardDef(Screen.xizmatlar, Icons.description_outlined, {
-      Lang.uz: 'Xizmatlar',
-      Lang.ru: 'Услуги',
-      Lang.en: 'Services',
-    }, {
-      Lang.uz: "Ko'rsatiladigan xizmatlar va ariza topshirish tartibi",
-      Lang.ru: 'Оказываемые услуги и порядок подачи заявлений',
-      Lang.en: 'Available services and how to apply',
+      Lang.uz: "Ko'p so'raladigan masalalar va ularning huquqiy yechimi",
+      Lang.ru: 'Часто поднимаемые вопросы и их правовое решение',
+      Lang.en: 'Most-raised issues and their legal resolution',
     }),
     CardDef(Screen.faq, Icons.help_outline, {
       Lang.uz: "Ko'p beriladigan savollar",
@@ -67,9 +70,9 @@ class AppData {
       Lang.ru: 'AI Консультант',
       Lang.en: 'AI Advisor',
     }, {
-      Lang.uz: "Sun'iy intellekt yordamchisi bilan suhbat",
-      Lang.ru: 'Диалог с помощником на базе ИИ',
-      Lang.en: 'Chat with the AI assistant',
+      Lang.uz: "Sun'iy intellekt maslahatchisi bilan ovozli suhbat",
+      Lang.ru: 'Голосовой диалог с ИИ-консультантом',
+      Lang.en: 'Voice conversation with the AI advisor',
     }),
     CardDef(Screen.contact, Icons.call_outlined, {
       Lang.uz: "Bog'lanish",
@@ -124,70 +127,199 @@ class AppData {
     ],
   };
 
-  /// [label, value]
-  static const Map<Lang, List<List<String>>> workRows = {
-    Lang.uz: [
-      ['Dushanba – Juma', '9:00 – 18:00'],
-      ['Tushlik', '13:00 – 14:00'],
-      ['Shanba, Yakshanba', 'Dam olish kuni'],
-    ],
-    Lang.ru: [
-      ['Понедельник – Пятница', '9:00 – 18:00'],
-      ['Обеденный перерыв', '13:00 – 14:00'],
-      ['Суббота, Воскресенье', 'Выходной'],
-    ],
-    Lang.en: [
-      ['Monday – Friday', '9:00 – 18:00'],
-      ['Lunch break', '13:00 – 14:00'],
-      ['Saturday, Sunday', 'Closed'],
-    ],
+  /// In-person reception schedule: the governor of Tashkent region and the
+  /// deputy governors, received weekly at the People's Reception building.
+  static const List<QabulOfficial> shaxsiyQabul = [
+    QabulOfficial(
+      {
+        Lang.uz: 'Mirzayev Zoyir Toirovich',
+        Lang.ru: 'Мирзаев Зоир Тоирович',
+        Lang.en: 'Mirzayev Zoyir Toirovich',
+      },
+      {
+        Lang.uz: 'Toshkent viloyati hokimi',
+        Lang.ru: 'Хоким Ташкентской области',
+        Lang.en: 'Governor of Tashkent region',
+      },
+      _wednesday,
+      '10:00 – 14:00',
+      '71-232-80-73',
+    ),
+    QabulOfficial(
+      {
+        Lang.uz: "Tursunov Otabek Ravshanbek o'g'li",
+        Lang.ru: 'Турсунов Отабек Равшанбек ўғли',
+        Lang.en: "Tursunov Otabek Ravshanbek o'g'li",
+      },
+      {
+        Lang.uz: "Viloyat hokimining moliya-iqtisod va kambag'allikni "
+            "qisqartirish masalalari bo'yicha birinchi o'rinbosari",
+        Lang.ru: 'Первый заместитель хокима области по финансово-'
+            'экономическим вопросам и сокращению бедности',
+        Lang.en: 'First deputy governor for finance, economy and poverty '
+            'reduction',
+      },
+      _tuesday,
+      '14:00 – 16:00',
+      '71-232-80-71',
+    ),
+    QabulOfficial(
+      {
+        Lang.uz: 'Qoraboyev Xurshid Abdivahobovich',
+        Lang.ru: 'Қорабоев Хуршид Абдивахобович',
+        Lang.en: 'Qoraboyev Xurshid Abdivahobovich',
+      },
+      {
+        Lang.uz: "Viloyat hokimining qishloq va suv xo'jaligi masalalari "
+            "bo'yicha o'rinbosari",
+        Lang.ru: 'Заместитель хокима области по вопросам сельского и '
+            'водного хозяйства',
+        Lang.en: 'Deputy governor for agriculture and water management',
+      },
+      _friday,
+      '15:00 – 17:00',
+      '71-232-80-44',
+    ),
+    QabulOfficial(
+      {
+        Lang.uz: 'Mahmudov Shukurulla Nasimxonovich',
+        Lang.ru: 'Махмудов Шукурулла Насимхонович',
+        Lang.en: 'Mahmudov Shukurulla Nasimxonovich',
+      },
+      {
+        Lang.uz: "Viloyat hokimining qurilish, kommunikatsiyalar, kommunal "
+            "xo'jalik, ekologiya va ko'kalamzorlashtirish masalalari "
+            "bo'yicha o'rinbosari",
+        Lang.ru: 'Заместитель хокима области по вопросам строительства, '
+            'коммуникаций, коммунального хозяйства, экологии и озеленения',
+        Lang.en: 'Deputy governor for construction, communications, '
+            'utilities, ecology and landscaping',
+      },
+      _tuesday,
+      '10:00 – 12:00',
+      '71-232-80-42',
+    ),
+    QabulOfficial(
+      {
+        Lang.uz: 'Mamajonov Jahongir Anvarjonovich',
+        Lang.ru: 'Мамажонов Жаҳонгир Анваржонович',
+        Lang.en: 'Mamajonov Jahongir Anvarjonovich',
+      },
+      {
+        Lang.uz: "Viloyat hokimining investitsiyalar, sanoat va savdo "
+            "masalalari bo'yicha o'rinbosari",
+        Lang.ru: 'Заместитель хокима области по вопросам инвестиций, '
+            'промышленности и торговли',
+        Lang.en: 'Deputy governor for investment, industry and trade',
+      },
+      _monday,
+      '14:00 – 16:00',
+      '99-301-19-90',
+    ),
+    QabulOfficial(
+      {
+        Lang.uz: 'Sultanbekov Otabek Sabirovich',
+        Lang.ru: 'Султанбеков Отабек Сабирович',
+        Lang.en: 'Sultanbekov Otabek Sabirovich',
+      },
+      {
+        Lang.uz: "Viloyat hokimining yoshlar siyosati, ijtimoiy "
+            "rivojlantirish va ma'naviy-ma'rifiy ishlar bo'yicha o'rinbosari",
+        Lang.ru: 'Заместитель хокима области по молодёжной политике, '
+            'социальному развитию и духовно-просветительской работе',
+        Lang.en: 'Deputy governor for youth policy, social development and '
+            'spiritual-educational affairs',
+      },
+      _friday,
+      '9:00 – 11:00',
+      '71-232-80-87',
+    ),
+    QabulOfficial(
+      {
+        Lang.uz: 'Babajanov Djamshid Xakimovich',
+        Lang.ru: 'Бабажанов Джамшид Хакимович',
+        Lang.en: 'Babajanov Djamshid Xakimovich',
+      },
+      {
+        Lang.uz: "Viloyat hokimining turizm, madaniyat, madaniy meros va "
+            "ommaviy kommunikatsiyalar masalalari bo'yicha o'rinbosari",
+        Lang.ru: 'Заместитель хокима области по вопросам туризма, культуры, '
+            'культурного наследия и массовых коммуникаций',
+        Lang.en: 'Deputy governor for tourism, culture, cultural heritage '
+            'and mass communications',
+      },
+      _thursday,
+      '15:00 – 17:00',
+      '99-313-43-99',
+    ),
+    QabulOfficial(
+      {
+        Lang.uz: 'Arzikulov Ilxomjon Nizomiddinovich',
+        Lang.ru: 'Арзикулов Илхомжон Низомиддинович',
+        Lang.en: 'Arzikulov Ilxomjon Nizomiddinovich',
+      },
+      {
+        Lang.uz: "Viloyat hokimining jamoat va diniy tashkilotlar bilan "
+            "aloqalar bo'yicha o'rinbosari",
+        Lang.ru: 'Заместитель хокима области по связям с общественными и '
+            'религиозными организациями',
+        Lang.en: 'Deputy governor for relations with public and religious '
+            'organisations',
+      },
+      _monday,
+      '11:00 – 13:00',
+      '71-232-80-30',
+    ),
+    QabulOfficial(
+      {
+        Lang.uz: 'Normirzayeva Nilufar Anvarjanovna',
+        Lang.ru: 'Нормирзаева Нилуфар Анваржановна',
+        Lang.en: 'Normirzayeva Nilufar Anvarjanovna',
+      },
+      {
+        Lang.uz: "Viloyat hokimining o'rinbosari — oila va xotin-qizlar "
+            "boshqarmasi boshlig'i",
+        Lang.ru: 'Заместитель хокима области — начальник управления по '
+            'делам семьи и женщин',
+        Lang.en: 'Deputy governor — head of the family and women’s affairs '
+            'department',
+      },
+      _thursday,
+      '10:00 – 12:00',
+      '71-232-80-71',
+    ),
+  ];
+
+  // Weekly reception day labels shared by the officials above.
+  static const Map<Lang, String> _monday = {
+    Lang.uz: 'Har haftaning dushanba kuni',
+    Lang.ru: 'Каждый понедельник',
+    Lang.en: 'Every Monday',
+  };
+  static const Map<Lang, String> _tuesday = {
+    Lang.uz: 'Har haftaning seshanba kuni',
+    Lang.ru: 'Каждый вторник',
+    Lang.en: 'Every Tuesday',
+  };
+  static const Map<Lang, String> _wednesday = {
+    Lang.uz: 'Har haftaning chorshanba kuni',
+    Lang.ru: 'Каждую среду',
+    Lang.en: 'Every Wednesday',
+  };
+  static const Map<Lang, String> _thursday = {
+    Lang.uz: 'Har haftaning payshanba kuni',
+    Lang.ru: 'Каждый четверг',
+    Lang.en: 'Every Thursday',
+  };
+  static const Map<Lang, String> _friday = {
+    Lang.uz: 'Har haftaning juma kuni',
+    Lang.ru: 'Каждую пятницу',
+    Lang.en: 'Every Friday',
   };
 
-  /// [position, days, hours]
-  static const Map<Lang, List<List<String>>> jadval = {
-    Lang.uz: [
-      ['Qabulxona rahbari', 'Dushanba, Chorshanba', '10:00–13:00'],
-      ["Rahbar o'rinbosari", 'Seshanba, Payshanba', '14:00–17:00'],
-      ["Bo'lim mas'ullari", 'Har ish kuni', '9:00–17:00'],
-    ],
-    Lang.ru: [
-      ['Руководитель приёмной', 'Понедельник, Среда', '10:00–13:00'],
-      ['Заместитель руководителя', 'Вторник, Четверг', '14:00–17:00'],
-      ['Ответственные отделов', 'Каждый рабочий день', '9:00–17:00'],
-    ],
-    Lang.en: [
-      ['Head of Reception', 'Monday, Wednesday', '10:00–13:00'],
-      ['Deputy Head', 'Tuesday, Thursday', '14:00–17:00'],
-      ['Department officers', 'Every working day', '9:00–17:00'],
-    ],
-  };
 
-  /// [name, person, room, phone]
-  static const Map<Lang, List<List<String>>> bolimlar = {
-    Lang.uz: [
-      ['Murojaatlarni qabul qilish bo\'limi', 'A. Karimov', '101-xona', '(71) 200-00-01'],
-      ['Yuridik maslahat bo\'limi', 'N. Rahimova', '102-xona', '(71) 200-00-02'],
-      ['Ijtimoiy masalalar bo\'limi', 'S. Tosheva', '201-xona', '(71) 200-00-03'],
-      ['Nazorat va ijro bo\'limi', 'B. Yusupov', '202-xona', '(71) 200-00-04'],
-      ['Axborot xizmati', 'D. Alimov', '105-xona', '(71) 200-00-05'],
-    ],
-    Lang.ru: [
-      ['Отдел приёма обращений', 'А. Каримов', 'каб. 101', '(71) 200-00-01'],
-      ['Отдел юридических консультаций', 'Н. Рахимова', 'каб. 102', '(71) 200-00-02'],
-      ['Отдел социальных вопросов', 'С. Тошева', 'каб. 201', '(71) 200-00-03'],
-      ['Отдел контроля и исполнения', 'Б. Юсупов', 'каб. 202', '(71) 200-00-04'],
-      ['Информационная служба', 'Д. Алимов', 'каб. 105', '(71) 200-00-05'],
-    ],
-    Lang.en: [
-      ['Appeals Intake Department', 'A. Karimov', 'Room 101', '(71) 200-00-01'],
-      ['Legal Advice Department', 'N. Rahimova', 'Room 102', '(71) 200-00-02'],
-      ['Social Affairs Department', 'S. Tosheva', 'Room 201', '(71) 200-00-03'],
-      ['Control & Execution Department', 'B. Yusupov', 'Room 202', '(71) 200-00-04'],
-      ['Information Service', 'D. Alimov', 'Room 105', '(71) 200-00-05'],
-    ],
-  };
-
-  /// [title, description]
+  /// [title, description] — no longer a visible section; kept as knowledge
+  /// for the offline AI advisor, which answers service questions from it.
   static const Map<Lang, List<List<String>>> xizmatlar = {
     Lang.uz: [
       ['Yozma murojaatlarni qabul qilish', 'Ariza, shikoyat va takliflarni ro\'yxatga olish'],

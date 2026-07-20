@@ -1,0 +1,6 @@
+# Developer scripts print to the console by design — they are never shipped.
+include: ../analysis_options.yaml
+
+linter:
+  rules:
+    avoid_print: false

@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' show PointMode;
 
 import 'package:flutter/material.dart';
 
@@ -7,6 +8,10 @@ import '../theme.dart';
 /// The full-screen decorative backdrop: a soft blue gradient with slowly
 /// drifting blurred blobs, a faint dot grid and horizon waves. Switches to a
 /// dark cinematic gradient while the AI advisor screen is open.
+///
+/// Split into two paint layers so the per-frame work stays small: the blobs
+/// (and stars, on dark) animate inside their own [RepaintBoundary], while the
+/// dot grid and waves are painted once and cached.
 class KioskBackground extends StatefulWidget {
   const KioskBackground({super.key, required this.dark});
 
@@ -48,20 +53,35 @@ class _KioskBackgroundState extends State<KioskBackground>
                   stops: [0.0, 0.48, 1.0],
                 ),
         ),
-        child: AnimatedBuilder(
-          animation: _c,
-          builder: (context, _) => CustomPaint(
-            painter: _BackdropPainter(_c.value, widget.dark),
-            size: Size.infinite,
-          ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            RepaintBoundary(
+              child: AnimatedBuilder(
+                animation: _c,
+                builder: (context, _) => CustomPaint(
+                  painter: _AnimatedPainter(_c.value, widget.dark),
+                  size: Size.infinite,
+                ),
+              ),
+            ),
+            if (!widget.dark)
+              const RepaintBoundary(
+                child: CustomPaint(
+                  painter: _StaticPainter(),
+                  size: Size.infinite,
+                ),
+              ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _BackdropPainter extends CustomPainter {
-  _BackdropPainter(this.t, this.dark);
+/// The animated layer: drifting blobs, plus twinkling stars on dark.
+class _AnimatedPainter extends CustomPainter {
+  _AnimatedPainter(this.t, this.dark);
 
   final double t;
   final bool dark;
@@ -84,6 +104,11 @@ class _BackdropPainter extends CustomPainter {
     if (dark) {
       _blob(canvas, Offset(w * 0.5, h * 0.32 + math.sin(a) * 20), h * 0.5,
           const Color(0x332563EB));
+      _blob(canvas, Offset(w * 0.16 + math.cos(a * 0.7) * 30, h * 0.72), h * 0.34,
+          const Color(0x1F1D4ED8));
+      _blob(canvas, Offset(w * 0.86 + math.sin(a * 0.8) * 26, h * 0.18), h * 0.30,
+          const Color(0x1A0E7490));
+      _drawStars(canvas, size, a);
       return;
     }
 
@@ -93,19 +118,53 @@ class _BackdropPainter extends CustomPainter {
         320, const Color(0xFFB8D4F2).withValues(alpha: 0.40));
     _blob(canvas, Offset(w * 0.55 + math.sin(a + 1) * 22, h * 0.34 + math.cos(a) * 18),
         230, const Color(0xFFD9E9FA).withValues(alpha: 0.55));
+  }
 
+  /// A field of gently twinkling stars for the dark (AI advisor) backdrop.
+  /// Positions are derived from the index, so the field is stable frame to
+  /// frame while each star breathes on its own rhythm.
+  void _drawStars(Canvas canvas, Size size, double a) {
+    final paint = Paint();
+    for (var i = 0; i < 90; i++) {
+      final fx = (math.sin(i * 12.9898) * 43758.5453).abs() % 1.0;
+      final fy = (math.sin(i * 78.2330) * 12543.8567).abs() % 1.0;
+      final twinkle =
+          0.5 + 0.5 * math.sin(a * (0.6 + fx * 0.9) + i * 2.4);
+      paint.color = Colors.white.withValues(alpha: 0.06 + 0.22 * twinkle);
+      canvas.drawCircle(
+        Offset(fx * size.width, fy * size.height),
+        0.8 + fy * 1.4 + twinkle * 0.6,
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_AnimatedPainter old) => old.t != t || old.dark != dark;
+}
+
+/// The static overlay of the light backdrop: dot grid and horizon waves.
+/// Painted once (its RepaintBoundary caches the layer between frames).
+class _StaticPainter extends CustomPainter {
+  const _StaticPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
     _drawDotGrid(canvas, size);
     _drawWaves(canvas, size);
   }
 
   void _drawDotGrid(Canvas canvas, Size size) {
-    final paint = Paint()..color = const Color(0xFF1E4B8F).withValues(alpha: 0.045);
+    final paint = Paint()
+      ..color = const Color(0xFF1E4B8F).withValues(alpha: 0.045)
+      ..strokeWidth = 2.6
+      ..strokeCap = StrokeCap.round;
     const step = 28.0;
-    for (double y = 0; y < size.height; y += step) {
-      for (double x = 0; x < size.width; x += step) {
-        canvas.drawCircle(Offset(x, y), 1.3, paint);
-      }
-    }
+    final points = <Offset>[
+      for (double y = 0; y < size.height; y += step)
+        for (double x = 0; x < size.width; x += step) Offset(x, y),
+    ];
+    canvas.drawPoints(PointMode.points, points, paint);
   }
 
   void _drawWaves(Canvas canvas, Size size) {
@@ -129,5 +188,5 @@ class _BackdropPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_BackdropPainter old) => old.t != t || old.dark != dark;
+  bool shouldRepaint(_StaticPainter old) => false;
 }
