@@ -49,3 +49,10 @@ app.*.map.json
 
 # Claude Code (shaxsiy)
 .claude/
+
+# === KATTA-BINAR-BLOK-v2 (GitHub 100MB limit) ===
+/dist/
+/build/
+.dart_tool/
+/windows/flutter/ephemeral/
+*.pdb

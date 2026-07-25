@@ -95,8 +95,27 @@ class VoiceSession {
       return true;
     } catch (e) {
       debugPrint('voice session unavailable (WebView2?): $e');
+      trace('init failed: $e');
       available = false;
       return false;
+    }
+  }
+
+  /// Appends a line to `%TEMP%\info_kiosk_voice.log`.
+  ///
+  /// A kiosk runs with no console and nobody watching it, so a voice failure
+  /// out in the field is otherwise invisible — this file is what staff can
+  /// send back when the advisor stops answering. Best-effort and tiny: only
+  /// failures are written, never a working session's chatter.
+  void trace(String line) {
+    try {
+      File('${Directory.systemTemp.path}/info_kiosk_voice.log').writeAsStringSync(
+        '${DateTime.now().toIso8601String()}  $line\n',
+        mode: FileMode.append,
+        flush: true,
+      );
+    } catch (_) {
+      // Read-only temp or a locked file — diagnostics are never worth a crash.
     }
   }
 
@@ -143,6 +162,7 @@ class VoiceSession {
         _emit(VoiceEventType.answer, text);
       case 'error':
         debugPrint('voice JS error: $text');
+        trace('js error: $text');
         _emit(VoiceEventType.error, text);
       case 'log':
         debugPrint('voice JS: $text');

@@ -45,6 +45,10 @@ class _AiScreenState extends State<AiScreen> with SingleTickerProviderStateMixin
       VoiceStatus.thinking => t.aiThinking,
       VoiceStatus.speaking => t.aiSpeaking,
       VoiceStatus.idle when state.noSpeechNotice => t.aiNoSpeech,
+      // A live session that could not open must say so. Otherwise the hint
+      // reverts to "touch the microphone" and the visitor keeps tapping an
+      // orb that will never answer.
+      VoiceStatus.idle when state.voiceFailed => t.aiMicUnavailable,
       VoiceStatus.idle => t.aiTapToSpeak,
     };
   }
@@ -58,8 +62,8 @@ class _AiScreenState extends State<AiScreen> with SingleTickerProviderStateMixin
     // recogniser even when a live session is *available*, because the live
     // session may still fail to open. They only step aside while a live
     // conversation is actually running.
-    final showQuickQuestions = state.speech.initialized &&
-        !state.speech.recognitionAvailable &&
+    final showQuickQuestions = (state.voiceFailed ||
+            (state.speech.initialized && !state.speech.recognitionAvailable)) &&
         !state.live.running;
 
     return LayoutBuilder(

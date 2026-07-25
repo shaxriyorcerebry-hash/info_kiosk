@@ -47,6 +47,13 @@ class KioskState extends ChangeNotifier {
   /// Briefly true after a listen attempt heard nothing, to show a hint.
   bool noSpeechNotice = false;
 
+  /// True once a live session has failed to open — no microphone on the
+  /// machine, permission refused, no network. Without it the screen falls
+  /// straight back to "touch the microphone", so a visitor taps the orb over
+  /// and over with nothing ever happening; with it they are told to use the
+  /// quick questions instead.
+  bool voiceFailed = false;
+
   final AiResponder _ai = const AiResponder();
   final AiApi _api;
   final SpeechService speech = SpeechService();
@@ -112,6 +119,7 @@ class KioskState extends ChangeNotifier {
       case VoiceEventType.error:
         // Drop back to the offline advisor rather than stranding the visitor.
         voice = VoiceStatus.idle;
+        voiceFailed = true;
         notifyListeners();
     }
   }
@@ -120,6 +128,9 @@ class KioskState extends ChangeNotifier {
   /// own voice-activity detection decides when each question ends.
   Future<void> _startLive() async {
     voice = VoiceStatus.connecting;
+    // Every attempt gets a clean slate: a kiosk whose network came back, or
+    // whose microphone was plugged in, must be able to recover on its own.
+    voiceFailed = false;
     notifyListeners();
     try {
       debugPrint('live: requesting voice token');
@@ -129,7 +140,9 @@ class KioskState extends ChangeNotifier {
       await live.start(token, greeting: Tr(lang).aiGreetingPrompt);
     } catch (e) {
       debugPrint('live session failed to start: $e');
+      live.trace('start failed: $e');
       voice = VoiceStatus.idle;
+      voiceFailed = true;
       notifyListeners();
     }
   }
@@ -316,6 +329,7 @@ class KioskState extends ChangeNotifier {
     aiLoading = false;
     voice = VoiceStatus.idle;
     noSpeechNotice = false;
+    voiceFailed = false;
     _listenGuard?.cancel();
     _noticeTimer?.cancel();
     chat.clear();

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
@@ -13,6 +12,7 @@ import 'l10n.dart';
 import 'masalalar_data.dart';
 import 'screen.dart';
 import 'theme.dart';
+import 'windows_shell.dart';
 import 'screens/ai_screen.dart';
 import 'screens/contact_screen.dart';
 import 'screens/faq_screen.dart';
@@ -113,29 +113,14 @@ class _KioskRootState extends State<KioskRoot> with WindowListener {
     final ok = await askExitPassword(context);
     _exitPrompt = false;
     if (ok) {
-      await _startExplorer();
       await WakelockPlus.disable();
       await windowManager.setPreventClose(false);
+      // Drop fullscreen first: a fullscreen window sits over the task bar, so
+      // the shell has to be uncovered before it can be brought back.
       await windowManager.setFullScreen(false);
+      await windowManager.hide();
+      await restoreWindowsShell();
       await windowManager.destroy();
-    }
-  }
-
-  /// Bring the Windows shell back up on the way out.
-  ///
-  /// On a kiosk machine this app is normally set as the shell in place of
-  /// Explorer, so quitting would otherwise leave a bare desktop with no task
-  /// bar. Started detached so it outlives this process; a failure here must
-  /// never block the exit, so it is swallowed.
-  Future<void> _startExplorer() async {
-    try {
-      await Process.start(
-        'explorer.exe',
-        const [],
-        mode: ProcessStartMode.detached,
-      );
-    } catch (_) {
-      // Explorer is unavailable or already running — leaving is still fine.
     }
   }
 
