@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show kReleaseMode;
+
 import 'l10n.dart';
 
 /// Static kiosk configuration — organisation details shown across the app.
@@ -40,13 +42,19 @@ class KioskConfig {
   /// Seconds of inactivity before the kiosk resets to the home screen.
   static const int idleSeconds = 90;
 
-  /// Hide the mouse cursor over the kiosk surface.
+  /// Hide the mouse cursor over the kiosk surface — **release builds only**.
   ///
   /// The screen is driven by a touch overlay. Many such overlays — infra-red
   /// frames in particular — report themselves to Windows as a mouse, and then
   /// an arrow is left sitting on the glass wherever the last visitor touched.
-  /// Set to false when working with a real mouse plugged in for maintenance.
-  static const bool hideCursor = true;
+  /// On the installed kiosk that arrow is pure noise, so it goes.
+  ///
+  /// During development the opposite is true: `flutter run` happens on a
+  /// laptop where the mouse *is* the only way to drive the app, and a hidden
+  /// cursor makes it impossible to see what you are clicking. So the cursor
+  /// stays visible in debug and profile builds and disappears only in the
+  /// release build that ships to the kiosk.
+  static const bool hideCursor = kReleaseMode;
 
   /// Password required to leave kiosk mode, asked for by the exit button.
   ///
