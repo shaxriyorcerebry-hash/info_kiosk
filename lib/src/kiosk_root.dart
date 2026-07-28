@@ -6,10 +6,8 @@ import 'package:webview_windows/webview_windows.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'config.dart';
-import 'data.dart';
 import 'kiosk_state.dart';
 import 'l10n.dart';
-import 'masalalar_data.dart';
 import 'screen.dart';
 import 'theme.dart';
 import 'windows_shell.dart';
@@ -50,6 +48,9 @@ class _KioskRootState extends State<KioskRoot> with WindowListener {
     super.initState();
     windowManager.addListener(this);
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
+    // Content first: the screen has nothing to show until it arrives, and the
+    // cached copy is on screen before the network is even tried.
+    _state.content.start();
     _state.initSpeech();
     _state.initLive();
   }
@@ -138,11 +139,13 @@ class _KioskRootState extends State<KioskRoot> with WindowListener {
           break;
       }
     }
-    if (_state.screen == Screen.masalalar && _state.masalaOrg != null) {
-      return MasalalarData.tashkilotlar[_state.masalaOrg!].name[lang]!;
+    final orgs = _state.content.topics?.orgs ?? const [];
+    final open = _state.masalaOrg;
+    if (_state.screen == Screen.masalalar && open != null && open < orgs.length) {
+      return orgs[open].name[lang] ?? '';
     }
-    for (final c in AppData.cards) {
-      if (c.id == _state.screen) return c.title[lang]!;
+    for (final c in _state.content.cards) {
+      if (c.id == _state.screen) return c.title[lang] ?? '';
     }
     return '';
   }
@@ -150,11 +153,11 @@ class _KioskRootState extends State<KioskRoot> with WindowListener {
   Widget _body() {
     return switch (_state.screen) {
       Screen.home => HomeScreen(state: _state),
-      Screen.qabul => QabulScreen(lang: _state.lang),
+      Screen.qabul => QabulScreen(state: _state),
       Screen.jadval => JadvalScreen(state: _state),
       Screen.masalalar => MasalalarScreen(state: _state),
       Screen.faq => FaqScreen(state: _state),
-      Screen.contact => ContactScreen(lang: _state.lang),
+      Screen.contact => ContactScreen(state: _state),
       Screen.ai => AiScreen(state: _state),
     };
   }
@@ -215,6 +218,10 @@ class _KioskRootState extends State<KioskRoot> with WindowListener {
                         palette: palette,
                         lang: _state.lang,
                         onExit: _confirmExit,
+                        orgName: _state.content.office
+                                ?.shortName[_state.lang] ??
+                            '',
+                        phone: _state.content.office?.phone ?? '',
                       ),
                     ],
                   ),

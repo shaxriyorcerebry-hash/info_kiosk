@@ -203,6 +203,30 @@ class Tr {
         'Say exactly the following sentence, word for word, adding nothing: "Hello! I am the People\'s Reception advisor. Please ask your question."',
       ]);
 
+  /// Shown in place of a section the backend has no content for yet.
+  ///
+  /// The kiosk deliberately does not fall back to anything of its own here: an
+  /// empty section is a gap somebody has to fill in the admin panel, and a
+  /// visitor reading stale text would never reveal it.
+  String get noContent => _p(const [
+        "Ma'lumot hali kiritilmagan",
+        'Данные ещё не внесены',
+        'No information has been entered yet',
+      ]);
+
+  String get noContentHint => _p(const [
+        "Bo'lim to'ldirilgandan so'ng ma'lumot shu yerda ko'rinadi. "
+            "Iltimos, qabulxona xodimiga murojaat qiling.",
+        'Информация появится здесь после заполнения раздела. '
+            'Пожалуйста, обратитесь к сотруднику приёмной.',
+        'The information will appear here once the section has been filled in. '
+            'Please ask the reception staff.',
+      ]);
+
+  /// Shown for the moment between the app opening and the first content load.
+  String get contentLoading =>
+      _p(const ['Yuklanmoqda...', 'Загрузка...', 'Loading...']);
+
   String get addressLabel => _p(const ['Manzil', 'Адрес', 'Address']);
   String get phoneLabel => _p(const ['Telefon', 'Телефон', 'Phone']);
   String get trustLabel =>

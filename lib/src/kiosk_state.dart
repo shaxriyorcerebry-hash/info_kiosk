@@ -6,6 +6,7 @@ import 'ai_responder.dart';
 import 'l10n.dart';
 import 'screen.dart';
 import 'services/ai_api.dart';
+import 'services/content_store.dart';
 import 'services/speech_service.dart';
 import 'services/voice_session.dart';
 
@@ -25,9 +26,17 @@ enum JadvalView { hub, shaxsiy, sayyor }
 /// Central, observable kiosk state: current language, screen, FAQ expansion
 /// and the voice-driven AI conversation. Screens listen to this and rebuild.
 class KioskState extends ChangeNotifier {
-  KioskState({AiApi? api, VoiceSession? live})
+  KioskState({AiApi? api, VoiceSession? live, ContentStore? content})
       : _api = api ?? AiApi(),
-        live = live ?? VoiceSession();
+        live = live ?? VoiceSession(),
+        content = content ?? ContentStore() {
+    // The content store is a second source of change: when a background
+    // refresh brings in a new schedule, the open screen has to redraw.
+    this.content.addListener(notifyListeners);
+  }
+
+  /// Everything the kiosk displays, as delivered by the backend.
+  final ContentStore content;
 
   Lang lang = Lang.uz;
   Screen screen = Screen.home;
@@ -251,7 +260,12 @@ class KioskState extends ChangeNotifier {
   /// any failure there — no network, timeout, ungrounded reply — falls back to
   /// the localized offline text so the kiosk never shows an error.
   Future<String> _answerFor(String msg) async {
-    final local = _ai.match(msg, lang);
+    final local = _ai.match(
+      msg,
+      lang,
+      faq: content.faq,
+      services: content.services,
+    );
     if (local != null) {
       // Small, deliberate delay so the "thinking" state is visible.
       await Future<void>.delayed(const Duration(milliseconds: 450));
@@ -350,6 +364,8 @@ class KioskState extends ChangeNotifier {
     _noticeTimer?.cancel();
     _speechSub?.cancel();
     _liveSub?.cancel();
+    content.removeListener(notifyListeners);
+    content.dispose();
     speech.dispose();
     live.dispose();
     super.dispose();

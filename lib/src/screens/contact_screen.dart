@@ -1,19 +1,27 @@
 import 'package:flutter/material.dart';
 
+import '../kiosk_state.dart';
 import '../config.dart';
 import '../l10n.dart';
 import '../theme.dart';
+import '../widgets/empty_content.dart';
 import '../widgets/info_card.dart';
 
 /// Address, phones, hours and a location panel.
 class ContactScreen extends StatelessWidget {
-  const ContactScreen({super.key, required this.lang});
+  const ContactScreen({super.key, required this.state});
 
-  final Lang lang;
+  final KioskState state;
 
   @override
   Widget build(BuildContext context) {
+    final lang = state.lang;
     final t = Tr(lang);
+    final office = state.content.office;
+    if (office == null) {
+      return EmptyContent(lang: lang, loading: !state.content.ready);
+    }
+    final address = office.address[lang] ?? '';
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(32, 6, 32, 32),
       child: Center(
@@ -31,10 +39,10 @@ class ContactScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        _Row(icon: Icons.place_outlined, label: t.addressLabel, value: KioskConfig.orgAddress[lang]!),
-                        _Row(icon: Icons.call_outlined, label: t.phoneLabel, value: KioskConfig.orgPhone),
-                        _Row(icon: Icons.support_agent_outlined, label: t.trustLabel, value: KioskConfig.trustPhone),
-                        _Row(icon: Icons.schedule_outlined, label: t.hoursLabel, value: t.hoursValue),
+                        _Row(icon: Icons.place_outlined, label: t.addressLabel, value: address),
+                        _Row(icon: Icons.call_outlined, label: t.phoneLabel, value: office.phone),
+                        _Row(icon: Icons.support_agent_outlined, label: t.trustLabel, value: office.trustPhone),
+                        _Row(icon: Icons.schedule_outlined, label: t.hoursLabel, value: office.workHours[lang] ?? ''),
                       ],
                     ),
                   ),
@@ -46,9 +54,7 @@ class ContactScreen extends StatelessWidget {
                     constraints: const BoxConstraints(minHeight: 380),
                     child: InfoCard(
                       padding: const EdgeInsets.all(14),
-                      child: _LocationPanel(
-                        address: KioskConfig.orgAddress[lang]!,
-                      ),
+                      child: _LocationPanel(address: address),
                     ),
                   ),
                 ),

@@ -25,7 +25,6 @@ class HeaderBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = Tr(state.lang);
     return ClipRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
@@ -41,7 +40,9 @@ class HeaderBar extends StatelessWidget {
               const SizedBox(width: 20),
               Expanded(
                 child: Text(
-                  t.orgFullName,
+                  // The office names itself: whatever the backend publishes is
+                  // what the header shows.
+                  state.content.office?.fullName[state.lang] ?? '',
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(

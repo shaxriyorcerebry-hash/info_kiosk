@@ -1,8 +1,21 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:info_kiosk/src/data.dart';
 import 'package:info_kiosk/src/kiosk_state.dart';
 import 'package:info_kiosk/src/l10n.dart';
 import 'package:info_kiosk/src/services/ai_api.dart';
+
+/// One published question and answer — the advisor's whole vocabulary in these
+/// tests. It comes from the backend now, exactly as it does on a real kiosk.
+const String kQuestion = 'Qanday hujjatlar kerak?';
+const String kAnswer = 'Pasport yoki ID-karta va yozma murojaat matni kerak.';
+
+const Map<String, dynamic> kFaqPayload = {
+  'items': [
+    {
+      'question': {'uz': kQuestion, 'ru': 'Какие документы нужны?', 'en': ''},
+      'answer': {'uz': kAnswer, 'ru': 'Паспорт и текст обращения.', 'en': ''},
+    },
+  ],
+};
 
 /// Backend stub: records what it was asked and replies as instructed.
 class _FakeApi extends AiApi {
@@ -38,12 +51,26 @@ void main() {
       () async {
     final api = _FakeApi();
     final s = KioskState(api: api);
+    s.content.applyPayload('faq', kFaqPayload);
 
-    // Taken verbatim from the kiosk's own FAQ, so it must match locally.
-    await s.ask(AppData.faq[Lang.uz]!.first[0]);
+    // Taken verbatim from the published FAQ, so it must match locally.
+    await s.ask(kQuestion);
 
     expect(api.calls, 0, reason: 'local match must not spend a backend call');
-    expect(s.chat.last.text, AppData.faq[Lang.uz]!.first[1]);
+    expect(s.chat.last.text, kAnswer);
+    s.dispose();
+  });
+
+  test('with an empty FAQ every question goes to the backend', () async {
+    final api = _FakeApi(answer: 'backend javobi');
+    final s = KioskState(api: api);
+
+    // Nothing published yet: the advisor has no vocabulary of its own and must
+    // not invent one from content compiled into the app.
+    await s.ask(kQuestion);
+
+    expect(api.calls, 1);
+    expect(s.chat.last.text, 'backend javobi');
     s.dispose();
   });
 

@@ -1,21 +1,29 @@
 import 'package:flutter/material.dart';
 
-import '../data.dart';
+import '../kiosk_state.dart';
 import '../l10n.dart';
 import '../theme.dart';
+import '../widgets/empty_content.dart';
 import '../widgets/info_card.dart';
 
 /// Reception procedure: numbered steps + required documents + a note.
 class QabulScreen extends StatelessWidget {
-  const QabulScreen({super.key, required this.lang});
+  const QabulScreen({super.key, required this.state});
 
-  final Lang lang;
+  final KioskState state;
 
   @override
   Widget build(BuildContext context) {
+    final lang = state.lang;
     final t = Tr(lang);
-    final steps = AppData.qabulSteps[lang]!;
-    final docs = AppData.qabulDocs[lang]!;
+    final info = state.content.reception;
+    if (info == null || info.isEmpty) {
+      return EmptyContent(lang: lang, loading: !state.content.ready);
+    }
+    final steps = [for (final s in info.steps) s[lang] ?? ''];
+    final docs = [for (final d in info.docs) d[lang] ?? ''];
+    final note = info.note[lang] ?? '';
+    final lawRef = state.content.office?.lawRef[lang] ?? '';
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(32, 6, 32, 32),
@@ -45,32 +53,40 @@ class QabulScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF7E6),
-                  border: Border.all(color: const Color(0xFFF0DFB4)),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  t.qabulNote,
-                  style: const TextStyle(fontSize: 19, height: 1.45, color: Color(0xFF7A5B12)),
-                ),
-              ),
-              const SizedBox(height: 10),
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  t.lawRef,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontStyle: FontStyle.italic,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.muted,
+              // The notice and the legal citation are published content too:
+              // when the office has not entered them, nothing is drawn rather
+              // than an empty yellow box.
+              if (note.isNotEmpty) ...[
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF7E6),
+                    border: Border.all(color: const Color(0xFFF0DFB4)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    note,
+                    style: const TextStyle(
+                        fontSize: 19, height: 1.45, color: Color(0xFF7A5B12)),
                   ),
                 ),
-              ),
+              ],
+              if (lawRef.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    lawRef,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontStyle: FontStyle.italic,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.muted,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

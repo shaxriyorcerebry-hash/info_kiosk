@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../content_models.dart';
 import '../kiosk_state.dart';
 import '../l10n.dart';
 import '../masalalar_data.dart';
 import '../theme.dart';
+import '../widgets/empty_content.dart';
 import '../widgets/info_card.dart';
 import '../widgets/pressable.dart';
 
@@ -26,7 +28,15 @@ class MasalalarScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Tr(state.lang);
-    final org = state.masalaOrg;
+    final topics = state.content.topics;
+    if (topics == null || topics.isEmpty) {
+      return EmptyContent(lang: state.lang, loading: !state.content.ready);
+    }
+    // A refresh can shorten the list while a visitor has one open; fall back
+    // to the grid rather than reading past the end of it.
+    final org = state.masalaOrg != null && state.masalaOrg! < topics.orgs.length
+        ? state.masalaOrg
+        : null;
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
       transitionBuilder: (child, anim) => FadeTransition(
@@ -43,12 +53,14 @@ class MasalalarScreen extends StatelessWidget {
           ? _OrgGrid(
               key: const ValueKey('grid'),
               t: t,
+              topics: topics,
               onOpen: state.openMasalaOrg,
             )
           : _OrgDetail(
               key: ValueKey('org-$org'),
               t: t,
-              org: MasalalarData.tashkilotlar[org],
+              org: topics.orgs[org],
+              notes: topics.generalNotes,
             ),
     );
   }
@@ -56,9 +68,15 @@ class MasalalarScreen extends StatelessWidget {
 
 /// The grid of organisations to choose from.
 class _OrgGrid extends StatelessWidget {
-  const _OrgGrid({super.key, required this.t, required this.onOpen});
+  const _OrgGrid({
+    super.key,
+    required this.t,
+    required this.topics,
+    required this.onOpen,
+  });
 
   final Tr t;
+  final TopicsInfo topics;
   final ValueChanged<int> onOpen;
 
   @override
@@ -96,7 +114,7 @@ class _OrgGrid extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    MasalalarData.period[t.lang]!,
+                    topics.period[t.lang] ?? '',
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
@@ -108,15 +126,11 @@ class _OrgGrid extends StatelessWidget {
                     spacing: 20,
                     runSpacing: 20,
                     children: [
-                      for (
-                        var i = 0;
-                        i < MasalalarData.tashkilotlar.length;
-                        i++
-                      )
+                      for (var i = 0; i < topics.orgs.length; i++)
                         _EnterIn(
                           delayMs: (i * 40).clamp(0, 400),
                           child: _OrgButton(
-                            org: MasalalarData.tashkilotlar[i],
+                            org: topics.orgs[i],
                             lang: t.lang,
                             width: cardWidth,
                             onTap: () => onOpen(i),
@@ -213,10 +227,15 @@ class _OrgDetail extends StatefulWidget {
     super.key,
     required this.t,
     required this.org,
+    required this.notes,
   });
 
   final Tr t;
   final Tashkilot org;
+
+  /// Closing legal notes that apply to every appeal, published alongside the
+  /// issues themselves.
+  final List<Map<Lang, String>> notes;
 
   @override
   State<_OrgDetail> createState() => _OrgDetailState();
@@ -273,8 +292,13 @@ class _OrgDetailState extends State<_OrgDetail> {
                       ),
                     ),
                   ],
-                  const SizedBox(height: 24),
-                  _EnterIn(delayMs: 400, child: _UmumiyIzoh(t: t)),
+                  if (widget.notes.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    _EnterIn(
+                      delayMs: 400,
+                      child: _UmumiyIzoh(t: t, notes: widget.notes),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -434,9 +458,10 @@ class _MasalaTile extends StatelessWidget {
 
 /// The closing legal notes that apply to every appeal.
 class _UmumiyIzoh extends StatelessWidget {
-  const _UmumiyIzoh({required this.t});
+  const _UmumiyIzoh({required this.t, required this.notes});
 
   final Tr t;
+  final List<Map<Lang, String>> notes;
 
   @override
   Widget build(BuildContext context) {
@@ -470,7 +495,7 @@ class _UmumiyIzoh extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          for (final note in MasalalarData.umumiyIzoh[t.lang]!) ...[
+          for (final note in [for (final n in notes) n[t.lang] ?? '']) ...[
             Padding(
               padding: const EdgeInsets.only(bottom: 9),
               child: Row(

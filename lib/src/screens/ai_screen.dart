@@ -2,7 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../data.dart';
 import '../kiosk_state.dart';
 import '../l10n.dart';
 import '../theme.dart';
@@ -510,7 +509,12 @@ class _QuickQuestions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final chips = AppData.chips[state.lang]!;
+    // Ready-made questions come from the published FAQ; with none entered the
+    // visitor simply speaks instead.
+    final chips = [
+      for (final c in state.content.faq?.chips ?? const <Map<Lang, String>>[])
+        c[state.lang] ?? '',
+    ]..removeWhere((c) => c.isEmpty);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [

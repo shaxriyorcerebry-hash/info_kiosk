@@ -8,6 +8,7 @@ import '../kiosk_state.dart';
 import '../l10n.dart';
 import '../screen.dart';
 import '../theme.dart';
+import '../widgets/empty_content.dart';
 import '../widgets/pressable.dart';
 
 /// Per-card accent gradient — a restrained, official palette drawn from the
@@ -79,7 +80,14 @@ class _HomeScreenState extends State<HomeScreen>
         final cardHeight = portrait
             ? ((box.maxHeight - 175 - 5 * 26) / 6).clamp(190.0, 320.0)
             : null;
-        return _buildScroll(t, lang, gridWidth, cardWidth, cardHeight);
+        final cards = widget.state.content.cards;
+        if (cards.isEmpty) {
+          return EmptyContent(
+            lang: lang,
+            loading: !widget.state.content.ready,
+          );
+        }
+        return _buildScroll(t, lang, cards, gridWidth, cardWidth, cardHeight);
       },
     );
   }
@@ -87,6 +95,7 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildScroll(
     Tr t,
     Lang lang,
+    List<CardDef> cards,
     double gridWidth,
     double cardWidth,
     double? cardHeight,
@@ -132,15 +141,15 @@ class _HomeScreenState extends State<HomeScreen>
               runSpacing: 26,
               alignment: WrapAlignment.center,
               children: [
-                for (var i = 0; i < AppData.cards.length; i++)
+                for (var i = 0; i < cards.length; i++)
                   _RisingIn(
                     animation: _slot(i + 1),
                     child: _HomeCard(
-                      card: AppData.cards[i],
+                      card: cards[i],
                       lang: lang,
                       width: cardWidth,
                       height: cardHeight,
-                      onTap: () => widget.state.open(AppData.cards[i].id),
+                      onTap: () => widget.state.open(cards[i].id),
                     ),
                   ),
               ],
@@ -201,7 +210,7 @@ class _HomeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = _accents[card.id]!;
+    final accent = _accents[card.id] ?? _accents[Screen.qabul]!;
     // Compact metrics when the fixed row height gets tight.
     final compact = height != null && height! < 230;
     final iconSize = compact ? 72.0 : 88.0;

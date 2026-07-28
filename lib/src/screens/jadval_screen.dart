@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../content_models.dart';
 import '../data.dart';
 import '../kiosk_state.dart';
 import '../l10n.dart';
 import '../sayyor_data.dart';
 import '../theme.dart';
+import '../widgets/empty_content.dart';
 import '../widgets/info_card.dart';
 import '../widgets/pressable.dart';
 
@@ -43,10 +45,28 @@ class JadvalScreen extends StatelessWidget {
             onShaxsiy: () => state.openJadval(JadvalView.shaxsiy),
             onSayyor: () => state.openJadval(JadvalView.sayyor),
           ),
-        JadvalView.shaxsiy =>
-            _ShaxsiyList(key: const ValueKey('shaxsiy'), t: t),
-        JadvalView.sayyor =>
-            _SayyorList(key: const ValueKey('sayyor'), t: t, lang: state.lang),
+        JadvalView.shaxsiy => switch (state.content.officials) {
+            final o? when !o.isEmpty =>
+              _ShaxsiyList(key: const ValueKey('shaxsiy'), t: t, info: o),
+            _ => EmptyContent(
+                key: const ValueKey('shaxsiy-empty'),
+                lang: state.lang,
+                loading: !state.content.ready,
+              ),
+          },
+        JadvalView.sayyor => switch (state.content.mobileSchedule) {
+            final s? when !s.isEmpty => _SayyorList(
+                key: const ValueKey('sayyor'),
+                t: t,
+                lang: state.lang,
+                orgs: s.orgs,
+              ),
+            _ => EmptyContent(
+                key: const ValueKey('sayyor-empty'),
+                lang: state.lang,
+                loading: !state.content.ready,
+              ),
+          },
       },
     );
   }
@@ -120,9 +140,10 @@ class _Hub extends StatelessWidget {
 /// The weekly in-person reception schedule of the governor and deputies —
 /// an intro banner and a card grid: name, position, weekly slot and phone.
 class _ShaxsiyList extends StatelessWidget {
-  const _ShaxsiyList({super.key, required this.t});
+  const _ShaxsiyList({super.key, required this.t, required this.info});
 
   final Tr t;
+  final OfficialsInfo info;
 
   @override
   Widget build(BuildContext context) {
@@ -152,7 +173,7 @@ class _ShaxsiyList extends StatelessWidget {
                         borderRadius: BorderRadius.circular(18),
                       ),
                       child: Text(
-                        t.shaxsiyIntro,
+                        info.intro[lang] ?? '',
                         style: const TextStyle(
                           fontSize: 23,
                           height: 1.45,
@@ -167,12 +188,12 @@ class _ShaxsiyList extends StatelessWidget {
                     spacing: 20,
                     runSpacing: 20,
                     children: [
-                      for (var i = 0; i < AppData.shaxsiyQabul.length; i++)
+                      for (var i = 0; i < info.officials.length; i++)
                         _EnterIn(
                           delayMs: (i * 45).clamp(0, 400),
                           child: _OfficialCard(
                             index: i + 1,
-                            official: AppData.shaxsiyQabul[i],
+                            official: info.officials[i],
                             lang: lang,
                             width: cardWidth,
                           ),
@@ -199,7 +220,7 @@ class _ShaxsiyList extends StatelessWidget {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              t.shaxsiyNote,
+                              info.note[lang] ?? '',
                               style: const TextStyle(
                                   fontSize: 20,
                                   height: 1.45,
@@ -341,10 +362,16 @@ class _OfficialCard extends StatelessWidget {
 
 /// The organisations of the mobile-reception schedule, one button each.
 class _SayyorList extends StatelessWidget {
-  const _SayyorList({super.key, required this.t, required this.lang});
+  const _SayyorList({
+    super.key,
+    required this.t,
+    required this.lang,
+    required this.orgs,
+  });
 
   final Tr t;
   final Lang lang;
+  final List<SayyorOrg> orgs;
 
   @override
   Widget build(BuildContext context) {
@@ -375,16 +402,16 @@ class _SayyorList extends StatelessWidget {
                     spacing: 20,
                     runSpacing: 20,
                     children: [
-                      for (var i = 0; i < SayyorData.orgs.length; i++)
+                      for (var i = 0; i < orgs.length; i++)
                         _EnterIn(
                           delayMs: (i * 30).clamp(0, 400),
                           child: _OrgButton(
-                            org: SayyorData.orgs[i],
+                            org: orgs[i],
                             t: t,
                             lang: lang,
                             width: cardWidth,
                             onTap: () => _showOrgDialog(
-                                context, SayyorData.orgs[i], t, lang),
+                                context, orgs[i], t, lang),
                           ),
                         ),
                     ],

@@ -2,7 +2,6 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 
-import '../config.dart';
 import '../l10n.dart';
 import '../theme.dart';
 import 'exit_button.dart';
@@ -15,11 +14,18 @@ class FooterBar extends StatelessWidget {
     required this.palette,
     required this.lang,
     required this.onExit,
+    this.orgName = '',
+    this.phone = '',
   });
 
   final Palette palette;
   final Lang lang;
   final VoidCallback onExit;
+
+  /// Short organisation name and phone, as published by the backend. Empty
+  /// until the office details have loaded.
+  final String orgName;
+  final String phone;
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +57,7 @@ class FooterBar extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        KioskConfig.orgShortName[lang]!,
+                        orgName,
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
@@ -62,7 +68,7 @@ class FooterBar extends StatelessWidget {
                       dot(),
                       const SizedBox(width: 12),
                       Text(
-                        KioskConfig.orgPhone,
+                        phone,
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,

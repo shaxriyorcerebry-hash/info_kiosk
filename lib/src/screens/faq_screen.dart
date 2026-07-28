@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../data.dart';
 import '../kiosk_state.dart';
 import '../theme.dart';
+import '../widgets/empty_content.dart';
 
-/// Accordion of frequently-asked questions.
+/// Accordion of frequently-asked questions, as published by the office.
 class FaqScreen extends StatelessWidget {
   const FaqScreen({super.key, required this.state});
 
@@ -12,7 +12,15 @@ class FaqScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = AppData.faq[state.lang]!;
+    final faq = state.content.faq;
+    if (faq == null || faq.isEmpty) {
+      return EmptyContent(lang: state.lang, loading: !state.content.ready);
+    }
+    final lang = state.lang;
+    final items = [
+      for (final e in faq.items)
+        [e.question[lang] ?? '', e.answer[lang] ?? ''],
+    ];
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(32, 6, 32, 32),
       child: Center(
