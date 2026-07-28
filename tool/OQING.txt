@@ -1,0 +1,121 @@
+========================================================
+  XALQ QABULXONASI — AXBOROT KIOSKI
+  O'zbekiston Respublikasi Prezidentining
+  Toshkent viloyatidagi Xalq qabulxonasi
+  Windows x64 | versiya 1.5.1
+========================================================
+
+ISHGA TUSHIRISH
+---------------
+"info_kiosk.exe" faylini ishga tushiring.
+
+MUHIM: Ushbu papkadagi BARCHA fayllar kerak
+(info_kiosk.exe + *.dll + data papkasi).
+Faqat .exe faylni alohida ko'chirmang — ishlamaydi.
+Papkani butunligicha ko'chiring, masalan: C:\Kiosk\
+
+
+>>> BIRINCHI ISHGA TUSHIRISH — INTERNET SHART <<<
+-------------------------------------------------
+Ekrandagi butun ma'lumot (bo'limlar, qabul jadvali,
+masalalar, FAQ, kontakt) SERVERDAN olinadi:
+    https://qabulxona.gennis.uz
+
+Birinchi ochilishda kompyuterda hech qanday nusxa yo'q,
+shuning uchun INTERNET ULANGAN bo'lishi kerak. Aks holda
+ekranlarda "Ma'lumot hali kiritilmagan" yozuvi turadi.
+
+O'rnatgandan keyin shunday qiling:
+  1. Internetni ulang;
+  2. Dasturni oching va HAR BIR bo'limni bir marta
+     ochib chiqing (ma'lumot kompyuterga saqlanadi);
+  3. Shundan keyin internet uzilsa ham dastur
+     oxirgi ma'lumot bilan ishlayveradi.
+
+Ma'lumot har 15 daqiqada fonda yangilanadi. Qabulxona
+admin panelida biror narsa o'zgartirilsa — dasturni
+qayta o'rnatish SHART EMAS, o'zi yangilanadi.
+
+
+KIOSK REJIMI
+------------
+Oddiy ishga tushirilganda dastur avtomatik:
+  - butun ekranni egallaydi (fullscreen);
+  - Alt+F4 bilan yopilmaydi;
+  - ekran o'chib qolmaydi (uxlamaydi);
+  - sichqoncha kursori ko'rinmaydi (sensorli ekran uchun);
+  - harakatsizlikdan keyin bosh sahifaga (o'zbek tiliga)
+    qaytadi. Vaqti admin panelda belgilanadi (default 90 s).
+
+CHIQISH
+-------
+Pastki o'ng burchakdagi ESHIK ikonasini bosing, so'ng
+PAROLNI kiriting. Parol qabulxona ma'muriyatida.
+
+
+OYNALI (TEST) REJIMI
+--------------------
+Fullscreen'siz, oddiy oynada ochish uchun
+KIOSK_WINDOWED muhit o'zgaruvchisini bering.
+
+CMD:
+    set KIOSK_WINDOWED=1
+    info_kiosk.exe
+
+PowerShell:
+    $env:KIOSK_WINDOWED=1
+    .\info_kiosk.exe
+
+
+BO'LIMLAR
+---------
+  - Bosh sahifa
+  - Qabul tartibi (bosqichlar va kerakli hujjatlar)
+  - Ish vaqti va qabul jadvali
+       > Shaxsiy qabul (hokim va o'rinbosarlari)
+       > Sayyor qabul (tashkilotlar bo'yicha jadval)
+  - Tashkilot va masalalar (huquqiy javoblar bilan)
+  - Ko'p beriladigan savollar (FAQ)
+  - AI Maslahatchi (ovozli suhbat)
+  - Bog'lanish (manzil, telefon, xarita)
+
+Tillar: O'zbek / Ruscha / Inglizcha (yuqori o'ng burchak).
+
+
+AI MASLAHATCHI — OVOZ UCHUN
+---------------------------
+Ovozli suhbat Microsoft Edge WebView2 talab qiladi.
+Windows 11 da u allaqachon bor. Windows 10 da bo'lmasa,
+bepul o'rnating:
+    https://go.microsoft.com/fwlink/p/?LinkId=2124703
+
+WebView2 bo'lmasa yoki mikrofon yo'q bo'lsa — dastur
+ishlayveradi, faqat AI ekranida tayyor savollar
+ko'rsatiladi (ovoz o'rniga bosib so'raladi).
+
+
+TALABLAR
+--------
+Windows 10 / 11 (64-bit).
+Internet — birinchi ishga tushirishda SHART, keyin
+ma'lumot yangilanishi va AI uchun kerak.
+
+Visual C++ runtime fayllari (msvcp140.dll, vcruntime140.dll,
+vcruntime140_1.dll va b.) shu papka ichiga qo'shib qo'yilgan,
+shuning uchun toza kompyuterda ham ishlaydi.
+
+Agar baribir "VCRUNTIME140_1.dll topilmadi" degan xato chiqsa,
+Microsoft'ning rasmiy paketini o'rnating:
+    https://aka.ms/vs/17/release/vc_redist.x64.exe
+
+
+MA'LUMOTLARNI O'ZGARTIRISH
+--------------------------
+Ekrandagi hech qanday matn dastur ichida saqlanmaydi.
+Hammasi qabulxona admin panelida tahrirlanadi va kioskga
+o'zi yetib boradi. Agar biror bo'limda "Ma'lumot hali
+kiritilmagan" yozuvi tursa — bu o'sha bo'lim admin panelda
+to'ldirilmaganini bildiradi (dastur nosozligi emas).
+
+Saqlangan nusxa shu yerda turadi:
+    %LOCALAPPDATA%\info_kiosk\content
