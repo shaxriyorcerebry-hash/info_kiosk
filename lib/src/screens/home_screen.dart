@@ -35,10 +35,20 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _enter = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1100),
-  )..forward();
+  // Built in initState, not lazily on first use: when the backend has not
+  // delivered the cards yet the screen returns early and never reads this, and
+  // a `late final` would then try to *create* the controller inside dispose(),
+  // where looking up the ticker's ancestor is no longer legal.
+  late final AnimationController _enter;
+
+  @override
+  void initState() {
+    super.initState();
+    _enter = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1100),
+    )..forward();
+  }
 
   @override
   void dispose() {
