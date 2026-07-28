@@ -103,6 +103,44 @@ class AiApi {
     );
   }
 
+  /// Asks the general advisor, the one the avatar kiosks talk to.
+  ///
+  /// This is the endpoint that actually answers today: [ask] is grounded in a
+  /// lex.uz index that is still empty, so it refuses every question, while
+  /// `converse` reasons with Google Search grounding and replies in the
+  /// visitor's language. Both are kept — see [KioskState.answerFor] for the
+  /// order — because a citation-backed legal answer, once the index is filled,
+  /// is worth more than a search-backed one.
+  ///
+  /// [history] is the exchange so far, oldest first, so a follow-up like "and
+  /// what documents does that need?" still makes sense. The backend caps it at
+  /// 20 turns; the kiosk sends fewer.
+  ///
+  /// Returns the answer text. Throws on network or shape errors.
+  Future<String> converse(
+    String text,
+    Lang lang, {
+    List<({bool isUser, String text})> history = const [],
+  }) async {
+    final data = await _postJson(_u('/avatar/converse'), {
+      'text': text,
+      'language': langCode(lang),
+      if (history.isNotEmpty)
+        'messages': [
+          for (final m in history.take(10))
+            {'role': m.isUser ? 'user' : 'ai', 'text': m.text},
+        ],
+    });
+    if (data is! Map) {
+      throw const FormatException('avatar/converse: not an object');
+    }
+    final answer = (data['answer'] as String?)?.trim() ?? '';
+    if (answer.isEmpty) {
+      throw const FormatException('avatar/converse: empty answer');
+    }
+    return answer;
+  }
+
   /// Requests an ephemeral Gemini Live credential.
   ///
   /// The info kiosk deliberately uses the **unlocked** `/avatar/voice-token`:

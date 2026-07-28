@@ -19,14 +19,24 @@ const Map<String, dynamic> kFaqPayload = {
 
 /// Backend stub: records what it was asked and replies as instructed.
 class _FakeApi extends AiApi {
-  _FakeApi({this.answer, this.grounded = true, this.fail = false})
-      : super(apiBase: 'https://example.invalid/api');
+  _FakeApi({
+    this.answer,
+    this.grounded = true,
+    this.fail = false,
+    this.converseFails = false,
+  }) : super(apiBase: 'https://example.invalid/api');
 
   final String? answer;
   final bool grounded;
   final bool fail;
+  /// What the general advisor replies when the legal lookup comes up empty.
+  static const String converseAnswer = 'suhbat javobi';
+  final bool converseFails;
+
   int calls = 0;
+  int converseCalls = 0;
   Lang? lastLang;
+  List<({bool isUser, String text})> lastHistory = const [];
 
   @override
   Future<AiAnswer> ask(String question, Lang lang) async {
@@ -34,6 +44,19 @@ class _FakeApi extends AiApi {
     lastLang = lang;
     if (fail) throw Exception('network down');
     return AiAnswer(answer ?? 'backend javobi', grounded: grounded);
+  }
+
+  @override
+  Future<String> converse(
+    String text,
+    Lang lang, {
+    List<({bool isUser, String text})> history = const [],
+  }) async {
+    converseCalls++;
+    lastLang = lang;
+    lastHistory = history;
+    if (converseFails) throw Exception('converse down');
+    return converseAnswer;
   }
 }
 
@@ -43,6 +66,14 @@ class _OfflineApi extends AiApi {
 
   @override
   Future<AiAnswer> ask(String question, Lang lang) async =>
+      fail('the offline kiosk must never call the backend');
+
+  @override
+  Future<String> converse(
+    String text,
+    Lang lang, {
+    List<({bool isUser, String text})> history = const [],
+  }) async =>
       fail('the offline kiosk must never call the backend');
 }
 
@@ -88,24 +119,68 @@ void main() {
     s.dispose();
   });
 
-  test('an ungrounded backend reply falls back to the offline text', () async {
+  test('an ungrounded legal answer is passed to the general advisor', () async {
+    // What the live backend does today: the lex.uz index is empty, so `ask`
+    // refuses every question. The visitor must still get an answer.
     final api = _FakeApi(answer: 'bilmayman', grounded: false);
     final s = KioskState(api: api);
 
     await s.ask('zzz qqq xyzzy');
 
-    expect(api.calls, 1);
-    expect(s.chat.last.text, Tr(Lang.uz).aiOffline);
+    expect(api.calls, 1, reason: 'the grounded source is still tried first');
+    expect(api.converseCalls, 1);
+    expect(s.chat.last.text, 'suhbat javobi');
+    expect(s.chat.last.text, isNot(Tr(Lang.uz).aiOffline));
     s.dispose();
   });
 
-  test('a backend failure never surfaces as an error', () async {
-    final api = _FakeApi(fail: true);
+  test('a grounded legal answer wins over the general advisor', () async {
+    const grounded = 'Mehnat kodeksining 78-moddasiga muvofiq ...';
+    final api = _FakeApi(answer: grounded);
+    final s = KioskState(api: api);
+
+    await s.ask('zzz qqq xyzzy');
+
+    // Citations beat generation: once the lex.uz index is filled, this path
+    // takes over on its own and `converse` is never reached.
+    expect(s.chat.last.text, grounded);
+    expect(api.converseCalls, 0);
+    s.dispose();
+  });
+
+  test('the advisor is given the conversation so far', () async {
+    final api = _FakeApi(grounded: false);
+    final s = KioskState(api: api);
+    s.chat.add(const ChatMsg(true, 'Qabul qachon?'));
+    s.chat.add(const ChatMsg(false, 'Dushanba–Juma 9:00–18:00.'));
+
+    await s.ask('Va hujjatlar?');
+
+    // A follow-up question is meaningless without what came before it.
+    expect(api.lastHistory.map((m) => m.text), contains('Qabul qachon?'));
+    expect(api.lastHistory.first.isUser, isTrue);
+    s.dispose();
+  });
+
+  test('both backend sources failing still shows the offline text', () async {
+    final api = _FakeApi(fail: true, converseFails: true);
     final s = KioskState(api: api);
 
     await s.ask('zzz qqq xyzzy');
 
     expect(s.chat.last.text, Tr(Lang.uz).aiOffline);
+    expect(s.aiLoading, isFalse);
+    s.dispose();
+  });
+
+  test('a failed legal lookup still reaches the general advisor', () async {
+    final api = _FakeApi(fail: true);
+    final s = KioskState(api: api);
+
+    await s.ask('zzz qqq xyzzy');
+
+    // One source being down is not a reason to leave the visitor unanswered.
+    expect(s.chat.last.text, 'suhbat javobi');
     expect(s.aiLoading, isFalse);
     s.dispose();
   });

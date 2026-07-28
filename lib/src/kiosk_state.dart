@@ -240,7 +240,7 @@ class KioskState extends ChangeNotifier {
     noSpeechNotice = false;
     notifyListeners();
 
-    final answer = await _answerFor(msg);
+    final answer = await answerFor(msg);
     chat.add(ChatMsg(false, answer));
     aiLoading = false;
     if (speech.ttsAvailable) {
@@ -252,14 +252,22 @@ class KioskState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Answers [msg], preferring the kiosk's own knowledge base.
+  /// Answers [msg], trying three sources in order of how much they can be
+  /// trusted for a question asked at a government reception desk.
   ///
-  /// The local base covers what this office is asked most (opening hours,
-  /// services, FAQ) and answers instantly and offline. Only when nothing
-  /// matches do we spend a backend call on the lex.uz-grounded advisor, and
-  /// any failure there — no network, timeout, ungrounded reply — falls back to
-  /// the localized offline text so the kiosk never shows an error.
-  Future<String> _answerFor(String msg) async {
+  /// 1. **The office's own published FAQ and services.** Instant, works with no
+  ///    network, and says exactly what this office wants said.
+  /// 2. **`/avatar/ask`** — grounded in the lex.uz index. Its answer carries
+  ///    legal citations, so it outranks anything generated; it is used only
+  ///    when the backend reports `grounded`, which today it never does because
+  ///    the index is empty. That is deliberate: the moment the index is filled
+  ///    this path starts working on its own, with no change here.
+  /// 3. **`/avatar/converse`** — the general advisor the avatar kiosks use,
+  ///    reasoning with search grounding. This is what actually answers today.
+  ///
+  /// Anything unanswered, and any failure along the way, ends at the localized
+  /// "I could not find an answer" text: a visitor is never shown an error.
+  Future<String> answerFor(String msg) async {
     final local = _ai.match(
       msg,
       lang,
@@ -271,13 +279,24 @@ class KioskState extends ChangeNotifier {
       await Future<void>.delayed(const Duration(milliseconds: 450));
       return local;
     }
-    if (_api.enabled) {
-      try {
-        final remote = await _api.ask(msg, lang);
-        if (remote.grounded) return remote.text;
-      } catch (e) {
-        debugPrint('avatar/ask failed, falling back offline: $e');
-      }
+    if (!_api.enabled) return Tr(lang).aiOffline;
+
+    try {
+      final remote = await _api.ask(msg, lang);
+      if (remote.grounded) return remote.text;
+      debugPrint('avatar/ask ungrounded, trying converse');
+    } catch (e) {
+      debugPrint('avatar/ask failed, trying converse: $e');
+    }
+    try {
+      // Everything already said, so a follow-up question keeps its thread.
+      return await _api.converse(
+        msg,
+        lang,
+        history: [for (final m in chat) (isUser: m.isUser, text: m.text)],
+      );
+    } catch (e) {
+      debugPrint('avatar/converse failed, falling back offline: $e');
     }
     return Tr(lang).aiOffline;
   }
