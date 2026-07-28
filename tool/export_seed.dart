@@ -370,7 +370,7 @@ butun kontent shu papkaga eksport qilingan: backend `/kiosk/info/*` bo'limlarini
 | 03 | [[03 - Shaxsiy qabul (officials)]] | `reception-schedule` | 9 mansabdor |
 | 04 | [[04 - FAQ, chiplar va xizmatlar (faq, services)]] | `faq`, `services` | 6 + 4 + 6 |
 | 05 | [[05 - Masalalar va huquqiy javoblar (topics)]] | `topics` | 15 yo'nalish, $issues masala |
-| 06 | [[06 - Sayyor qabul jadvali (mobile-schedule)]] | `mobile-schedule` | 32 tashkilot, $visits tashrif |
+| 06 | [[06 - Sayyor qabul jadvali (mobile-schedule)]] | `mobile-schedule` | ${SayyorData.orgs.length} tashkilot, $visits tashrif |
 | 07 | [[07 - Ilovada qolgan matnlar (l10n)]] | — (interfeys matnlari) | qaror kerak |
 
 ---
