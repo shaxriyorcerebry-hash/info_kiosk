@@ -300,7 +300,10 @@ void main() {
       'config': config,
       'sections': sections,
       'reception': reception,
-      'officials': officials,
+      // File name must equal the backend section name: `seed_kiosk_content`
+      // writes each file into the section it is named after, and the officials
+      // live in the `reception-schedule` section (Backend, 2026-07-28).
+      'reception-schedule': officials,
       'mobile-schedule': mobileSchedule,
       'topics': topics,
       'faq': faq,
@@ -380,10 +383,10 @@ backend'ning `app/seed_data/kiosk_info/` papkasiga ko'chiriladi.
 
 | Fayl | Endpoint | Holat (2026-07-28) |
 |------|----------|--------------------|
-| `json/config.json` | `GET /kiosk/info/config` | ✅ backendда bor (version 1) |
-| `json/sections.json` | `GET /kiosk/info/sections` | ✅ backendда bor (version 1) |
-| `json/reception.json` | `GET /kiosk/info/reception` | ✅ backendда bor (version 1) — `note` qo'shilsin |
-| `json/officials.json` | `GET /kiosk/reception-schedule` | 🔴 endpoint **404** |
+| `json/config.json` | `GET /kiosk/info/config` | 🟡 version 2, lekin eski seed — `law_ref` yo'q |
+| `json/sections.json` | `GET /kiosk/info/sections` | ✅ backendда bor (version 2) |
+| `json/reception.json` | `GET /kiosk/info/reception` | 🟡 version 2, lekin eski seed — `note` yo'q |
+| `json/reception-schedule.json` | `GET /kiosk/reception-schedule` | ✅ endpoint qurildi (2026-07-28), `officials: []` — **seed kerak** |
 | `json/mobile-schedule.json` | `GET /kiosk/info/mobile-schedule` | 🟡 `data: null` — **seed kerak** |
 | `json/topics.json` | `GET /kiosk/info/topics` | 🟡 `data: null` — **seed kerak** |
 | `json/faq.json` | `GET /kiosk/info/faq` | 🟡 `data: null` — **seed kerak** |
@@ -478,7 +481,9 @@ String receptionMd() {
 
 String officialsMd() {
   final b = StringBuffer(header('03 — Shaxsiy qabul (`officials`)', 'lib/src/data.dart → shaxsiyQabul; l10n → shaxsiyIntro, shaxsiyNote'));
-  b.writeln('> 🔴 Endpoint `GET /kiosk/reception-schedule` jonli **404** qaytaradi (2026-07-28).');
+  b.writeln('> ✅ Endpoint `GET /kiosk/reception-schedule` **qurildi** (Backend, 2026-07-28) — jonli 200,');
+  b.writeln('> lekin hozircha bo\'sh: `{intro: null, note: null, officials: []}`. **Seed kutilmoqda.**');
+  b.writeln('> ⚠️ Seed fayl nomi — **`reception-schedule.json`** (fayl nomi = bo\'lim nomi, backend talabi).');
   b.writeln('> Shakl [[../18 - Shaxsiy qabul jadvali — Backend so\'rovi|API 18]] dagi bilan bir xil.\n');
   b.writeln('## 9 mansabdor\n');
   b.writeln('| # | F.I.Sh. (uz) | F.I.Sh. (ru) | Lavozim (uz) | Qabul kuni | `day_of_week` | Vaqt | Telefon |');
