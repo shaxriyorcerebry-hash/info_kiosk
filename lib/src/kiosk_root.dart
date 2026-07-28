@@ -78,7 +78,11 @@ class _KioskRootState extends State<KioskRoot> with WindowListener {
         _state.voiceBusy ||
         // An abandoned password prompt must not sit open on a public screen.
         _exitPrompt;
-    if (idle > KioskConfig.idleSeconds && dirty) {
+    // The office sets its own reset delay; the built-in value is only what a
+    // kiosk uses before it has ever reached the backend.
+    final limit =
+        _state.content.office?.idleSeconds ?? KioskConfig.idleSeconds;
+    if (idle > limit && dirty) {
       _lastActivity = DateTime.now();
       // Close any open dialog (e.g. the mobile-reception modal) before
       // returning to the pristine home screen.

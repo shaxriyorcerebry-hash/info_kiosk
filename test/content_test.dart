@@ -146,6 +146,18 @@ void main() {
       );
     });
 
+    test('the office sets the idle reset, within sane bounds', () {
+      OfficeInfo parse(Object? seconds) =>
+          OfficeInfo.parse({'idle_seconds': seconds});
+
+      expect(parse(120).idleSeconds, 120);
+      // A typo in the admin panel must not reset the screen under a visitor's
+      // hands, nor leave their session up for the next person.
+      expect(parse(0).idleSeconds, 15);
+      expect(parse(99999).idleSeconds, 600);
+      expect(parse(null).idleSeconds, isNull, reason: 'built-in default wins');
+    });
+
     test('a missing translation falls back to Uzbek, not to blank', () {
       final text = triText(const {'uz': 'Qabul tartibi', 'ru': '', 'en': null});
       expect(text[Lang.ru], 'Qabul tartibi');

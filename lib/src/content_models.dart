@@ -138,6 +138,7 @@ class OfficeInfo {
     required this.lawRef,
     required this.phone,
     required this.trustPhone,
+    this.idleSeconds,
     this.lat,
     this.lon,
   });
@@ -149,6 +150,19 @@ class OfficeInfo {
   final Map<Lang, String> lawRef;
   final String phone;
   final String trustPhone;
+
+  /// Seconds of inactivity before the kiosk returns to the home screen.
+  ///
+  /// Clamped on the way in: a stray `0` or a missing digit in the admin panel
+  /// would otherwise either reset the screen out from under a visitor mid-read
+  /// or leave their session — and whatever they were looking up — on display
+  /// for the next person. Null when unset, and the built-in default applies.
+  final int? idleSeconds;
+
+  /// Office coordinates. The contact screen's map is an offline image with the
+  /// pin baked in at build time ([KioskConfig.mapPinX]), so these are carried
+  /// for completeness rather than drawn — a moved office needs a new tile
+  /// image, not just a new number.
   final double? lat;
   final double? lon;
 
@@ -163,6 +177,9 @@ class OfficeInfo {
       lawRef: triText(d['law_ref']),
       phone: d['phone']?.toString().trim() ?? '',
       trustPhone: d['trust_phone']?.toString().trim() ?? '',
+      idleSeconds: d['idle_seconds'] is num
+          ? (d['idle_seconds'] as num).toInt().clamp(15, 600)
+          : null,
       lat: loc is Map ? num_(loc['lat']) : null,
       lon: loc is Map ? num_(loc['lon']) : null,
     );
