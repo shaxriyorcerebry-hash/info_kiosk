@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
+import 'pressable.dart';
 
 /// Small, discreet exit affordance shown inside the footer. It is a door icon
 /// on a blue-and-white badge; tapping it asks for confirmation before leaving
 /// kiosk mode.
+///
+/// The badge stays visually small — it is for staff, not for visitors, and it
+/// should not invite curious taps — but it sits inside a 56×56 touch area, so
+/// a member of staff hits it first time without aiming. It carries no tooltip:
+/// a tooltip only appears on hover or long-press, neither of which happens on
+/// a kiosk screen, and the door icon says enough on its own.
 class ExitButton extends StatelessWidget {
   const ExitButton({super.key, required this.onTap});
 
@@ -12,14 +19,13 @@ class ExitButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Tooltip(
-      message: 'Chiqish',
-      child: Material(
-        color: Colors.transparent,
-        shape: const CircleBorder(),
-        child: InkWell(
-          onTap: onTap,
-          customBorder: const CircleBorder(),
+    return Pressable(
+      onTap: onTap,
+      pressedScale: 0.88,
+      child: SizedBox(
+        width: 56,
+        height: 56,
+        child: Center(
           child: Container(
             width: 38,
             height: 38,
@@ -35,8 +41,11 @@ class ExitButton extends StatelessWidget {
                 ),
               ],
             ),
-            child: const Icon(Icons.meeting_room_outlined,
-                color: AppColors.primary, size: 22),
+            child: const Icon(
+              Icons.meeting_room_outlined,
+              color: AppColors.primary,
+              size: 22,
+            ),
           ),
         ),
       ),

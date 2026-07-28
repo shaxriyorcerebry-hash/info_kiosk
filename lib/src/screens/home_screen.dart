@@ -175,7 +175,14 @@ class _RisingIn extends StatelessWidget {
   }
 }
 
-class _HomeCard extends StatefulWidget {
+/// One home-screen section card.
+///
+/// The card used to lift and light up on mouse hover. Nothing hovers over a
+/// kiosk — a visitor's finger is either on the glass or off it — so that state
+/// is gone and the same emphasis now happens *while the card is pressed*,
+/// where a visitor can actually see it: the card settles into its shadow and
+/// the arrow fills with the section colour, confirming the touch landed.
+class _HomeCard extends StatelessWidget {
   const _HomeCard({
     required this.card,
     required this.lang,
@@ -193,36 +200,25 @@ class _HomeCard extends StatefulWidget {
   final VoidCallback onTap;
 
   @override
-  State<_HomeCard> createState() => _HomeCardState();
-}
-
-class _HomeCardState extends State<_HomeCard> {
-  bool _hover = false;
-
-  @override
   Widget build(BuildContext context) {
-    final accent = _accents[widget.card.id]!;
+    final accent = _accents[card.id]!;
     // Compact metrics when the fixed row height gets tight.
-    final compact = widget.height != null && widget.height! < 230;
+    final compact = height != null && height! < 230;
     final iconSize = compact ? 72.0 : 88.0;
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hover = true),
-      onExit: (_) => setState(() => _hover = false),
-      cursor: SystemMouseCursors.click,
-      child: Pressable(
-        onTap: widget.onTap,
-        pressedScale: 0.965,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
+    return Pressable(
+      onTap: onTap,
+      pressedScale: 0.965,
+      builder: (context, pressed) {
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
           curve: Curves.easeOutCubic,
-          transform: Matrix4.translationValues(0, _hover ? -8 : 0, 0),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: accent.first.withValues(alpha: _hover ? 0.22 : 0.12),
-                blurRadius: _hover ? 56 : 40,
-                offset: Offset(0, _hover ? 28 : 16),
+                color: accent.first.withValues(alpha: pressed ? 0.26 : 0.12),
+                blurRadius: pressed ? 30 : 40,
+                offset: Offset(0, pressed ? 10 : 16),
               ),
             ],
           ),
@@ -231,9 +227,9 @@ class _HomeCardState extends State<_HomeCard> {
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
               child: Container(
-                width: widget.width,
-                height: widget.height,
-                constraints: widget.height == null
+                width: width,
+                height: height,
+                constraints: height == null
                     ? const BoxConstraints(minHeight: 212)
                     : null,
                 padding: EdgeInsets.fromLTRB(
@@ -276,7 +272,7 @@ class _HomeCardState extends State<_HomeCard> {
                             ],
                           ),
                           child: Icon(
-                            widget.card.icon,
+                            card.icon,
                             size: compact ? 34 : 42,
                             color: Colors.white,
                           ),
@@ -284,7 +280,7 @@ class _HomeCardState extends State<_HomeCard> {
                         const SizedBox(width: 20),
                         Expanded(
                           child: Text(
-                            widget.card.title[widget.lang]!,
+                            card.title[lang]!,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -299,11 +295,11 @@ class _HomeCardState extends State<_HomeCard> {
                     ),
                     SizedBox(height: compact ? 10 : 16),
                     _BottomRow(
-                      expand: widget.height != null,
+                      expand: height != null,
                       children: [
                         Expanded(
                           child: Text(
-                            widget.card.desc[widget.lang]!,
+                            card.desc[lang]!,
                             maxLines: compact ? 2 : 3,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
@@ -316,20 +312,20 @@ class _HomeCardState extends State<_HomeCard> {
                         ),
                         const SizedBox(width: 12),
                         AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
+                          duration: const Duration(milliseconds: 160),
                           width: 44,
                           height: 44,
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: _hover
+                            color: pressed
                                 ? accent.first
                                 : accent.first.withValues(alpha: 0.10),
                           ),
                           child: Icon(
                             Icons.arrow_forward_rounded,
                             size: 24,
-                            color: _hover ? Colors.white : accent.first,
+                            color: pressed ? Colors.white : accent.first,
                           ),
                         ),
                       ],
@@ -339,8 +335,8 @@ class _HomeCardState extends State<_HomeCard> {
               ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

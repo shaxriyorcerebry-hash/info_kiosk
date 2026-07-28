@@ -40,6 +40,14 @@ class KioskConfig {
   /// Seconds of inactivity before the kiosk resets to the home screen.
   static const int idleSeconds = 90;
 
+  /// Hide the mouse cursor over the kiosk surface.
+  ///
+  /// The screen is driven by a touch overlay. Many such overlays — infra-red
+  /// frames in particular — report themselves to Windows as a mouse, and then
+  /// an arrow is left sitting on the glass wherever the last visitor touched.
+  /// Set to false when working with a real mouse plugged in for maintenance.
+  static const bool hideCursor = true;
+
   /// Password required to leave kiosk mode, asked for by the exit button.
   ///
   /// This only stops a visitor walking up and closing the kiosk; it is

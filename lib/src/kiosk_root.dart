@@ -161,6 +161,10 @@ class _KioskRootState extends State<KioskRoot> with WindowListener {
 
   @override
   Widget build(BuildContext context) {
+    // Only a press counts as being here, never a pointer crossing the glass: a
+    // touch overlay that reports itself as a mouse emits move events from stray
+    // reflections and passing sleeves, and letting those reset the idle timer
+    // would keep an abandoned session open indefinitely.
     return Listener(
       behavior: HitTestBehavior.translucent,
       onPointerDown: (_) => _markActive(),
