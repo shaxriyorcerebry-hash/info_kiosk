@@ -18,7 +18,11 @@ class QabulScreen extends StatelessWidget {
     final t = Tr(lang);
     final info = state.content.reception;
     if (info == null || info.isEmpty) {
-      return EmptyContent(lang: lang, loading: !state.content.ready);
+      return EmptyContent(
+        lang: lang,
+        loading: !state.content.ready,
+        offline: state.content.unreachable,
+      );
     }
     final steps = [for (final s in info.steps) s[lang] ?? ''];
     final docs = [for (final d in info.docs) d[lang] ?? ''];

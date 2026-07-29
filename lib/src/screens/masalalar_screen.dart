@@ -30,7 +30,11 @@ class MasalalarScreen extends StatelessWidget {
     final t = Tr(state.lang);
     final topics = state.content.topics;
     if (topics == null || topics.isEmpty) {
-      return EmptyContent(lang: state.lang, loading: !state.content.ready);
+      return EmptyContent(
+        lang: state.lang,
+        loading: !state.content.ready,
+        offline: state.content.unreachable,
+      );
     }
     // A refresh can shorten the list while a visitor has one open; fall back
     // to the grid rather than reading past the end of it.

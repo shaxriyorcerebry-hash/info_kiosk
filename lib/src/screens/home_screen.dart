@@ -95,6 +95,7 @@ class _HomeScreenState extends State<HomeScreen>
           return EmptyContent(
             lang: lang,
             loading: !widget.state.content.ready,
+            offline: widget.state.content.unreachable,
           );
         }
         return _buildScroll(t, lang, cards, gridWidth, cardWidth, cardHeight);

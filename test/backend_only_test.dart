@@ -108,6 +108,20 @@ void main() {
     s.dispose();
   });
 
+  testWidgets('a kiosk that cannot reach the server says so, not "no data"',
+      (tester) async {
+    final s = _emptyState();
+    // Exactly the state of a freshly installed kiosk with no network: no
+    // cache, every fetch failing. Blaming the office for an empty database
+    // here is how a whole day gets lost in the wrong admin panel.
+    s.content.markUnreachable('sections: SocketException: no route to host');
+    await _pump(tester, FaqScreen(state: s));
+
+    expect(find.text(Tr(Lang.uz).noConnection), findsOneWidget);
+    expect(find.text(Tr(Lang.uz).noContent), findsNothing);
+    s.dispose();
+  });
+
   testWidgets('nothing is blamed on the office before the first fetch',
       (tester) async {
     final s = _emptyState();

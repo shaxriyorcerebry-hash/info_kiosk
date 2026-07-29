@@ -227,6 +227,27 @@ class Tr {
   String get contentLoading =>
       _p(const ['Yuklanmoqda...', 'Загрузка...', 'Loading...']);
 
+  /// Shown when the kiosk has never managed to reach the server.
+  ///
+  /// Kept apart from [noContent] on purpose: "nobody has filled this in" and
+  /// "this machine cannot reach the server" are different problems for
+  /// different people, and a kiosk that confuses them wastes a day of somebody
+  /// looking in the admin panel for a fault that is in the network.
+  String get noConnection => _p(const [
+        'Server bilan bog\'lanib bo\'lmadi',
+        'Не удалось связаться с сервером',
+        'Could not reach the server',
+      ]);
+
+  String get noConnectionHint => _p(const [
+        'Kiosk internetga ulanmagan yoki server javob bermayapti. '
+            'Iltimos, texnik xodimga xabar bering.',
+        'Киоск не подключён к интернету или сервер не отвечает. '
+            'Пожалуйста, сообщите техническому сотруднику.',
+        'The kiosk is not connected to the internet, or the server is not '
+            'responding. Please inform technical staff.',
+      ]);
+
   String get addressLabel => _p(const ['Manzil', 'Адрес', 'Address']);
   String get phoneLabel => _p(const ['Telefon', 'Телефон', 'Phone']);
   String get trustLabel =>

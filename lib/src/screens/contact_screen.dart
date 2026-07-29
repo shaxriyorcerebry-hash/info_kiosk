@@ -19,7 +19,11 @@ class ContactScreen extends StatelessWidget {
     final t = Tr(lang);
     final office = state.content.office;
     if (office == null) {
-      return EmptyContent(lang: lang, loading: !state.content.ready);
+      return EmptyContent(
+        lang: lang,
+        loading: !state.content.ready,
+        offline: state.content.unreachable,
+      );
     }
     final address = office.address[lang] ?? '';
     return SingleChildScrollView(

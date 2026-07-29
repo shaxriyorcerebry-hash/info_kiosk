@@ -14,7 +14,11 @@ class FaqScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final faq = state.content.faq;
     if (faq == null || faq.isEmpty) {
-      return EmptyContent(lang: state.lang, loading: !state.content.ready);
+      return EmptyContent(
+        lang: state.lang,
+        loading: !state.content.ready,
+        offline: state.content.unreachable,
+      );
     }
     final lang = state.lang;
     final items = [

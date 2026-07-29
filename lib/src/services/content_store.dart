@@ -51,6 +51,19 @@ class ContentStore extends ChangeNotifier {
   /// When the backend was last reached successfully, or null if never.
   DateTime? lastSync;
 
+  /// Why the last fetch failed, or null when the last one worked.
+  ///
+  /// A kiosk has no console and nobody watching it: without this, a machine
+  /// that cannot resolve the host, sits behind a proxy, or has a clock so far
+  /// out that TLS refuses the certificate looks exactly like a backend nobody
+  /// has filled in. The screens use [unreachable] to say which it is, and
+  /// [logPath] keeps the underlying error for whoever comes to fix it.
+  String? lastError;
+
+  /// True when this kiosk has never once reached the server. Distinguishes a
+  /// networking fault from a genuinely empty section.
+  bool get unreachable => lastSync == null && lastError != null;
+
   // ---- the content itself -------------------------------------------------
 
   OfficeInfo? office;
@@ -84,6 +97,8 @@ class ContentStore extends ChangeNotifier {
     if (!_api.enabled || _disposed) return;
     var changed = false;
     var reached = false;
+    final wasUnreachable = unreachable;
+    String? failure;
     for (final section in KioskContentApi.sections) {
       try {
         final res = await _api.fetch(section, etag: _etags[section]);
@@ -98,11 +113,40 @@ class ContentStore extends ChangeNotifier {
         // A section that cannot be reached keeps whatever it already had; the
         // kiosk stays on the last good copy rather than blanking a screen.
         debugPrint('content: $section failed, keeping cache ($e)');
+        failure ??= '$section: $e';
       }
     }
-    if (reached) lastSync = DateTime.now();
-    if (changed) _notify();
+    if (reached) {
+      lastSync = DateTime.now();
+      lastError = null;
+    } else if (failure != null) {
+      lastError = failure;
+      _log(failure);
+    }
+    if (changed || wasUnreachable != unreachable) _notify();
   }
+
+  /// Appends a line to `<cache dir>\log.txt`.
+  ///
+  /// The one place an engineer standing at a broken kiosk can look. Only
+  /// failures are written, and only the first of each round, so the file stays
+  /// short enough to read at a glance.
+  void _log(String line) {
+    try {
+      final file = File('${_dir.path}/log.txt');
+      file.parent.createSync(recursive: true);
+      file.writeAsStringSync(
+        '${DateTime.now().toIso8601String()}  $line\n',
+        mode: FileMode.append,
+        flush: true,
+      );
+    } catch (_) {
+      // Diagnostics are never worth a crash.
+    }
+  }
+
+  /// Where [_log] writes, so it can be quoted to whoever has to fix the kiosk.
+  String get logPath => '${_dir.path}\\log.txt';
 
   /// Feeds a payload in as though it had just arrived from the backend, so a
   /// test can stand a screen up without a server behind it.
@@ -110,6 +154,15 @@ class ContentStore extends ChangeNotifier {
   void applyPayload(String section, Map<String, dynamic>? data) {
     ready = true;
     if (_apply(section, data)) _notify();
+  }
+
+  /// Puts the store in the state of a kiosk that has never reached the server.
+  @visibleForTesting
+  void markUnreachable(String error) {
+    ready = true;
+    lastSync = null;
+    lastError = error;
+    _notify();
   }
 
   @override

@@ -52,6 +52,7 @@ class JadvalScreen extends StatelessWidget {
                 key: const ValueKey('shaxsiy-empty'),
                 lang: state.lang,
                 loading: !state.content.ready,
+                offline: state.content.unreachable,
               ),
           },
         JadvalView.sayyor => switch (state.content.mobileSchedule) {
@@ -65,6 +66,7 @@ class JadvalScreen extends StatelessWidget {
                 key: const ValueKey('sayyor-empty'),
                 lang: state.lang,
                 loading: !state.content.ready,
+                offline: state.content.unreachable,
               ),
           },
       },
