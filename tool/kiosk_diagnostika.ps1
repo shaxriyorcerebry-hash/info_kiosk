@@ -75,7 +75,10 @@ Write-Host ''
 # --- 4. Proxy ---------------------------------------------------------------
 Write-Host '[4] Proxy sozlamalari' -ForegroundColor Yellow
 $winhttp = (netsh winhttp show proxy 2>&1 | Out-String).Trim()
-if ($winhttp -match 'Direct access') {
+# netsh matni Windows tiliga qarab o'zgaradi: inglizcha "Direct access",
+# ruscha "Прямой доступ". Ikkalasini ham taniymiz, aks holda ruscha
+# Windows'da proxy yo'q bo'lsa ham "proxy bor" deb noto'g'ri ogohlantiradi.
+if ($winhttp -match 'Direct access' -or $winhttp -match [char]0x041F + '.*' + [char]0x0434 + [char]0x043E + [char]0x0441 + [char]0x0442 + [char]0x0443 + [char]0x043F) {
     Write-Host '    WinHTTP: proxy yoq (togridan-togri)' -ForegroundColor Green
 } else {
     Write-Host ('    WinHTTP: ' + $winhttp) -ForegroundColor DarkYellow

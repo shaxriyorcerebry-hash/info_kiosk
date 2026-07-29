@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import '../config.dart';
+import 'tls.dart';
 
 /// One section as it came back from the backend.
 ///
@@ -83,7 +84,7 @@ class KioskContentApi {
     if (!enabled) throw const SocketException('backend not configured');
     final uri = Uri.parse('$apiBase${_pathFor(section)}?lang=all');
 
-    final client = HttpClient()..connectionTimeout = timeout;
+    final client = await KioskTls.client(connectionTimeout: timeout);
     try {
       final req = await client.getUrl(uri).timeout(timeout);
       req.headers.set(HttpHeaders.acceptHeader, 'application/json');

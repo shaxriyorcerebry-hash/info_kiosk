@@ -4,6 +4,7 @@ import 'dart:io';
 
 import '../config.dart';
 import '../l10n.dart';
+import 'tls.dart';
 
 /// One answer from the qabulhona backend's legal advisor.
 ///
@@ -180,7 +181,7 @@ class AiApi {
 
   Future<dynamic> _getJson(Uri uri, {Duration? timeout}) async {
     final t = timeout ?? this.timeout;
-    final client = HttpClient()..connectionTimeout = t;
+    final client = await KioskTls.client(connectionTimeout: t);
     try {
       final req = await client.getUrl(uri).timeout(t);
       req.headers.set(HttpHeaders.acceptHeader, 'application/json');
@@ -196,7 +197,7 @@ class AiApi {
   }
 
   Future<dynamic> _postJson(Uri uri, Map<String, dynamic> payload) async {
-    final client = HttpClient()..connectionTimeout = timeout;
+    final client = await KioskTls.client(connectionTimeout: timeout);
     try {
       final req = await client.postUrl(uri).timeout(timeout);
       req.headers.contentType = ContentType.json;

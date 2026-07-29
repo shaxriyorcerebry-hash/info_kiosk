@@ -72,6 +72,10 @@ flutter:
     # Google GenAI browser SDK, bundled so the voice page never fetches from a
     # CDN (the kiosk only ever talks to the backend and Gemini itself).
     - assets/web/genai.min.js
+    # Trusted roots for the backend's certificate. Windows kiosks are often
+    # installed from an image whose root store was never updated, and Dart
+    # takes its roots from that store — see lib/src/services/tls.dart.
+    - assets/certs/roots.pem
 
   # To add assets to your application, add an assets section, like this:
   # assets:
