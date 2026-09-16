@@ -340,6 +340,24 @@ class MobileScheduleInfo {
     return iso == null ? raw : '${iso[3]}.${iso[2]}.${iso[1]}';
   }
 
+  /// Whether [visit] was before [today] (a calendar day, Tashkent).
+  ///
+  /// The schedule covers a whole quarter, so by its last month most stops
+  /// are behind: the organisation dialog lists the coming ones first. A
+  /// month-only visit ("Iyul") is past once its month is — the schedule is
+  /// the current year's; anything unreadable counts as coming, so it is
+  /// never pushed out of sight.
+  static bool isPast(SayyorVisit visit, DateTime today) {
+    final m = RegExp(r'^(\d{1,2})\.(\d{1,2})\.(\d{4})$').firstMatch(visit.date);
+    if (m != null) {
+      final day =
+          DateTime.utc(int.parse(m[3]!), int.parse(m[2]!), int.parse(m[1]!));
+      return day.isBefore(DateTime.utc(today.year, today.month, today.day));
+    }
+    final month = AppData.months[Lang.uz]!.indexOf(visit.date.toLowerCase());
+    return month != -1 && month + 1 < today.month;
+  }
+
   static MobileScheduleInfo parse(Map<String, dynamic> d) {
     return MobileScheduleInfo(
       period: triText(d['period']),

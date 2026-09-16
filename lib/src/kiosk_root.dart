@@ -23,6 +23,7 @@ import 'widgets/footer_bar.dart';
 import 'widgets/header_bar.dart';
 import 'widgets/kiosk_background.dart';
 import 'widgets/section_nav.dart';
+import 'widgets/staff_refresh.dart';
 
 /// The root kiosk shell: owns state, the live clock and the idle-reset timer,
 /// and lays out background + header + section + content + footer + exit.
@@ -95,6 +96,13 @@ class _KioskRootState extends State<KioskRoot> with WindowListener {
   }
 
   void _markActive() => _lastActivity = DateTime.now();
+
+  /// Staff held the logo: fetch now rather than wait for the timer.
+  Future<void> _staffRefresh() => runStaffRefresh(
+        context,
+        lang: () => _state.lang,
+        refresh: _state.content.refresh,
+      );
 
   /// Grant the microphone to the voice page. There is nobody at an unattended
   /// kiosk to answer a permission prompt, and the page is our own local file
@@ -208,7 +216,12 @@ class _KioskRootState extends State<KioskRoot> with WindowListener {
                 Positioned.fill(
                   child: Column(
                     children: [
-                      HeaderBar(state: _state, palette: palette, clock: _clock),
+                      HeaderBar(
+                        state: _state,
+                        palette: palette,
+                        clock: _clock,
+                        onLogoHold: _staffRefresh,
+                      ),
                       if (!_state.isHome)
                         SectionNav(
                           title: _screenTitle(_state.lang),

@@ -2,7 +2,7 @@
   XALQ QABULXONASI — AXBOROT KIOSKI
   O'zbekiston Respublikasi Prezidentining
   Toshkent viloyatidagi Xalq qabulxonasi
-  Windows x64 | versiya 1.5.1
+  Windows x64 | versiya 1.6.0
 ========================================================
 
 ISHGA TUSHIRISH
@@ -32,9 +32,20 @@ O'rnatgandan keyin shunday qiling:
   3. Shundan keyin internet uzilsa ham dastur
      oxirgi ma'lumot bilan ishlayveradi.
 
-Ma'lumot har 15 daqiqada fonda yangilanadi. Qabulxona
+Ma'lumot har 5 daqiqada fonda yangilanadi. Qabulxona
 admin panelida biror narsa o'zgartirilsa — dasturni
 qayta o'rnatish SHART EMAS, o'zi yangilanadi.
+
+DARHOL YANGILASH (xodim uchun): yuqori chap burchakdagi
+LOGOTIPNI 3 SONIYA bosib turing. Pastda natija chiqadi:
+"Ma'lumot yangilandi · soat" yoki
+"Server bilan bog'lanib bo'lmadi — oldingi ma'lumot
+ko'rsatilmoqda".
+
+HOKIM QABULI: hokim panelda belgilagan qabul sanasi
+"Shaxsiy qabul" bo'limida hokim kartasida chiqadi
+(katta sana + soat + joy). Sana o'tib ketsa yoki
+belgilanmagan bo'lsa — "Qabul vaqti belgilanmagan".
 
 
 KIOSK REJIMI
@@ -73,7 +84,8 @@ BO'LIMLAR
   - Qabul tartibi (bosqichlar va kerakli hujjatlar)
   - Ish vaqti va qabul jadvali
        > Shaxsiy qabul (hokim va o'rinbosarlari)
-       > Sayyor qabul (tashkilotlar bo'yicha jadval)
+       > Sayyor qabul (tashkilotlar bo'yicha jadval;
+         avval bugungi va kelgusi qabullar, keyin o'tganlari)
   - Tashkilot va masalalar (huquqiy javoblar bilan)
   - Ko'p beriladigan savollar (FAQ)
   - AI Maslahatchi (ovozli suhbat)
@@ -96,7 +108,8 @@ ko'rsatiladi (ovoz o'rniga bosib so'raladi).
 
 TALABLAR
 --------
-Windows 10 / 11 (64-bit).
+Windows 10 / 11 (64-bit). Ekran vertikal (1080x1920)
+uchun moslangan; gorizontal ekranda ham ishlaydi.
 Internet — birinchi ishga tushirishda SHART, keyin
 ma'lumot yangilanishi va AI uchun kerak.
 

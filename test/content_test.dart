@@ -27,6 +27,15 @@ class _FakeApi extends KioskContentApi {
       etag: 'etag-$section',
     );
   }
+
+  /// `reception-points` → a list, or a thrown error; unset → an empty list.
+  @override
+  Future<List<dynamic>> fetchReceptionPoints() async {
+    asked.add('reception-points');
+    final value = payloads['reception-points'];
+    if (value is Exception) throw value;
+    return (value as List<dynamic>?) ?? const [];
+  }
 }
 
 Directory _tempDir() =>
@@ -301,6 +310,8 @@ void main() {
           'topics',
           'mobile-schedule',
           'services',
+          // The governor's reception date, set in the dashboard.
+          'reception-points',
         ]),
       );
       dir.deleteSync(recursive: true);

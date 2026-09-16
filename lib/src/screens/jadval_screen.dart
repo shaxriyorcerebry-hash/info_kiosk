@@ -5,6 +5,7 @@ import '../data.dart';
 import '../kiosk_state.dart';
 import '../l10n.dart';
 import '../sayyor_data.dart';
+import '../services/hokim_reception.dart';
 import '../theme.dart';
 import '../widgets/empty_content.dart';
 import '../widgets/info_card.dart';
@@ -45,7 +46,7 @@ class JadvalScreen extends StatelessWidget {
             onShaxsiy: () => state.openJadval(JadvalView.shaxsiy),
             onSayyor: () => state.openJadval(JadvalView.sayyor),
           ),
-        JadvalView.shaxsiy => switch (state.content.officials) {
+        JadvalView.shaxsiy => switch (state.content.officialsShown) {
             final o? when !o.isEmpty =>
               _ShaxsiyList(key: const ValueKey('shaxsiy'), t: t, info: o),
             _ => EmptyContent(
@@ -140,7 +141,12 @@ class _Hub extends StatelessWidget {
 }
 
 /// The weekly in-person reception schedule of the governor and deputies —
-/// an intro banner and a card grid: name, position, weekly slot and phone.
+/// an intro banner, the governor's card across the full width, and a card
+/// grid of the deputies: name, position, weekly slot and phone.
+///
+/// The hall kiosks stand in portrait (1080 px wide, or 720–864 logical at
+/// 125–150 % scaling), so the grid drops to two columns — one below 760 px —
+/// and the governor's card lays out side by side down to 720 px.
 class _ShaxsiyList extends StatelessWidget {
   const _ShaxsiyList({super.key, required this.t, required this.info});
 
@@ -150,13 +156,15 @@ class _ShaxsiyList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lang = t.lang;
+    // The governor has a single, dated reception — it gets its own row.
+    final hokim = info.officials.indexWhere(isHokimOfficial);
     return LayoutBuilder(
       builder: (context, box) {
-        final cols = box.maxWidth > 1240 ? 3 : 2;
+        final cols = box.maxWidth > 1240 ? 3 : (box.maxWidth >= 760 ? 2 : 1);
         final gridWidth = (box.maxWidth - 64).clamp(280.0, 1500.0);
         final cardWidth = (gridWidth - 20 * (cols - 1)) / cols;
         return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(32, 6, 32, 32),
+          padding: const EdgeInsets.fromLTRB(32, 6, 32, 12),
           child: Center(
             child: ConstrainedBox(
               constraints: BoxConstraints(maxWidth: gridWidth),
@@ -168,7 +176,7 @@ class _ShaxsiyList extends StatelessWidget {
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 26, vertical: 22),
+                          horizontal: 26, vertical: 16),
                       decoration: BoxDecoration(
                         color: const Color(0xFFE9F1FA),
                         border: Border.all(color: const Color(0xFFC4D6EC)),
@@ -178,37 +186,52 @@ class _ShaxsiyList extends StatelessWidget {
                         info.intro[lang] ?? '',
                         style: const TextStyle(
                           fontSize: 23,
-                          height: 1.45,
+                          height: 1.4,
                           fontWeight: FontWeight.w700,
                           color: AppColors.primaryDark,
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 18),
+                  if (hokim >= 0) ...[
+                    _EnterIn(
+                      delayMs: 40,
+                      child: _HokimCard(
+                        index: hokim + 1,
+                        official: info.officials[hokim],
+                        t: t,
+                        width: gridWidth,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                  ],
                   Wrap(
                     spacing: 20,
-                    runSpacing: 20,
+                    runSpacing: 16,
                     children: [
                       for (var i = 0; i < info.officials.length; i++)
-                        _EnterIn(
-                          delayMs: (i * 45).clamp(0, 400),
-                          child: _OfficialCard(
-                            index: i + 1,
-                            official: info.officials[i],
-                            lang: lang,
-                            width: cardWidth,
+                        if (i != hokim)
+                          _EnterIn(
+                            delayMs: (i * 45).clamp(0, 400),
+                            child: _OfficialCard(
+                              index: i + 1,
+                              official: info.officials[i],
+                              lang: lang,
+                              width: cardWidth,
+                              // Evens out a row; a lone card needs no floor.
+                              minHeight: cols > 1 ? 240 : 0,
+                            ),
                           ),
-                        ),
                     ],
                   ),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 18),
                   _EnterIn(
                     delayMs: 420,
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 22, vertical: 18),
+                          horizontal: 22, vertical: 14),
                       decoration: BoxDecoration(
                         color: const Color(0xFFE9F1FA),
                         border: Border.all(color: const Color(0xFFC4D6EC)),
@@ -243,6 +266,325 @@ class _ShaxsiyList extends StatelessWidget {
   }
 }
 
+/// The governor: one reception, on one date, so the card is the section's
+/// feature — full width, brand gradient, the date set large on a white slot.
+///
+/// Side by side from 720 px (a portrait 1080 px kiosk, and 864 px at 125 %
+/// scaling); stacked below that.
+class _HokimCard extends StatelessWidget {
+  const _HokimCard({
+    required this.index,
+    required this.official,
+    required this.t,
+    required this.width,
+  });
+
+  final int index;
+  final QabulOfficial official;
+  final Tr t;
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    final wide = width >= 720;
+    final info = _HokimInfo(index: index, official: official, lang: t.lang);
+    final slot = _HokimSlot(official: official, t: t);
+    return Container(
+      width: width,
+      padding: EdgeInsets.all(wide ? 24 : 20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.ink, AppColors.primaryDark, AppColors.primary],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.28),
+            blurRadius: 28,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: wide
+          ? IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(flex: 11, child: info),
+                  const SizedBox(width: 26),
+                  Expanded(flex: 10, child: slot),
+                ],
+              ),
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [info, const SizedBox(height: 20), slot],
+            ),
+    );
+  }
+}
+
+/// Left side of the governor's card: who, and how to call — white on blue.
+class _HokimInfo extends StatelessWidget {
+  const _HokimInfo({
+    required this.index,
+    required this.official,
+    required this.lang,
+  });
+
+  final int index;
+  final QabulOfficial official;
+  final Lang lang;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.5), width: 1.4),
+                  ),
+                  child: Text(
+                    '$index',
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    official.name[lang]!,
+                    style: const TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      height: 1.15,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              official.position[lang]!,
+              style: TextStyle(
+                fontSize: 21,
+                height: 1.35,
+                fontWeight: FontWeight.w600,
+                color: Colors.white.withValues(alpha: 0.86),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 18),
+        Row(
+          children: [
+            Icon(Icons.call_outlined,
+                size: 24, color: Colors.white.withValues(alpha: 0.86)),
+            const SizedBox(width: 10),
+            Text(
+              official.phone,
+              style: const TextStyle(
+                fontSize: 23,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Right side of the governor's card: when. Three states — a set date, no
+/// date ("not set"), or the weekly wording while the date is unknown.
+class _HokimSlot extends StatelessWidget {
+  const _HokimSlot({required this.official, required this.t});
+
+  final QabulOfficial official;
+  final Tr t;
+
+  @override
+  Widget build(BuildContext context) {
+    final lang = t.lang;
+    final scheduled = official.scheduled;
+    final unset = scheduled == null && official.time.isEmpty;
+
+    final List<Widget> body;
+    if (scheduled != null) {
+      body = [
+        _label(Icons.event_available_outlined, t.nextReception,
+            AppColors.primary),
+        const SizedBox(height: 10),
+        Text(
+          AppData.receptionDay(scheduled.at, lang,
+              withYear: scheduled.withYear),
+          style: const TextStyle(
+            fontSize: 42,
+            height: 1.05,
+            fontWeight: FontWeight.w900,
+            color: AppColors.ink,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                _capitalised(AppData.weekdayName(scheduled.at, lang)),
+                style: const TextStyle(
+                  fontSize: 25,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.body,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            _timePill(official.time),
+          ],
+        ),
+      ];
+    } else if (unset) {
+      body = [
+        _label(Icons.event_busy_outlined, t.nextReception, AppColors.muted),
+        const SizedBox(height: 12),
+        Text(
+          official.day[lang]!,
+          style: const TextStyle(
+            fontSize: 28,
+            height: 1.25,
+            fontWeight: FontWeight.w800,
+            color: AppColors.muted,
+          ),
+        ),
+      ];
+    } else {
+      body = [
+        _label(Icons.schedule_outlined, t.receptionDayLabel, AppColors.primary),
+        const SizedBox(height: 10),
+        Text(
+          official.day[lang]!,
+          style: const TextStyle(
+            fontSize: 27,
+            height: 1.25,
+            fontWeight: FontWeight.w800,
+            color: AppColors.ink,
+          ),
+        ),
+        if (official.time.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: _timePill(official.time),
+          ),
+        ],
+      ];
+    }
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ...body,
+          if (official.location.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Container(height: 1, color: AppColors.cardBorder),
+            const SizedBox(height: 14),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.place_outlined,
+                    size: 23, color: AppColors.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    official.location,
+                    style: const TextStyle(
+                      fontSize: 19,
+                      height: 1.3,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.body,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  static Widget _label(IconData icon, String text, Color color) => Row(
+        children: [
+          Icon(icon, size: 22, color: color),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              text.toUpperCase(),
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 1.2,
+                color: color,
+              ),
+            ),
+          ),
+        ],
+      );
+
+  static Widget _timePill(String time) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          gradient: const LinearGradient(
+            colors: [AppColors.primaryDark, AppColors.primary],
+          ),
+        ),
+        child: Text(
+          time,
+          style: const TextStyle(
+            fontSize: 30,
+            fontWeight: FontWeight.w900,
+            color: Colors.white,
+            fontFeatures: [FontFeature.tabularFigures()],
+          ),
+        ),
+      );
+
+  static String _capitalised(String s) =>
+      s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+}
+
 /// One official: numbered, strictly typographic — no gradients, thin rules.
 class _OfficialCard extends StatelessWidget {
   const _OfficialCard({
@@ -250,19 +592,21 @@ class _OfficialCard extends StatelessWidget {
     required this.official,
     required this.lang,
     required this.width,
+    required this.minHeight,
   });
 
   final int index;
   final QabulOfficial official;
   final Lang lang;
   final double width;
+  final double minHeight;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: width,
-      constraints: const BoxConstraints(minHeight: 264),
-      padding: const EdgeInsets.fromLTRB(26, 24, 26, 22),
+      constraints: BoxConstraints(minHeight: minHeight),
+      padding: const EdgeInsets.fromLTRB(26, 20, 26, 18),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
@@ -315,9 +659,9 @@ class _OfficialCard extends StatelessWidget {
               color: AppColors.muted,
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           Container(height: 1, color: AppColors.cardBorder),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           Row(
             children: [
               const Icon(Icons.schedule_outlined,
@@ -548,6 +892,24 @@ class _OrgDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final maxH = MediaQuery.of(context).size.height * 0.80;
+    // Coming stops first: by the quarter's last month most of a long list is
+    // behind, and a visitor should not scroll past it to find next week.
+    final today = tashkentNow(DateTime.now());
+    final coming = [
+      for (final v in org.visits)
+        if (!MobileScheduleInfo.isPast(v, today)) v,
+    ];
+    final past = [
+      for (final v in org.visits)
+        if (MobileScheduleInfo.isPast(v, today)) v,
+    ];
+    final rows = <Widget>[
+      if (coming.isEmpty) _DialogNote(text: t.noUpcomingVisits),
+      for (final v in coming) _VisitRow(visit: v, lang: lang),
+      if (past.isNotEmpty) _PastHeader(text: t.pastVisits),
+      for (final v in past)
+        Opacity(opacity: 0.55, child: _VisitRow(visit: v, lang: lang)),
+    ];
     return Center(
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: 780, maxHeight: maxH),
@@ -636,16 +998,81 @@ class _OrgDialog extends StatelessWidget {
                   child: ListView.separated(
                     shrinkWrap: true,
                     padding: const EdgeInsets.all(20),
-                    itemCount: org.visits.length,
+                    itemCount: rows.length,
                     separatorBuilder: (_, _) => const SizedBox(height: 12),
-                    itemBuilder: (context, i) =>
-                        _VisitRow(visit: org.visits[i], lang: lang),
+                    itemBuilder: (context, i) => rows[i],
                   ),
                 ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// "Past receptions" — the divider between coming and past stops.
+class _PastHeader extends StatelessWidget {
+  const _PastHeader({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Row(
+        children: [
+          const Icon(Icons.history_rounded, size: 22, color: AppColors.muted),
+          const SizedBox(width: 8),
+          Text(
+            text,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: AppColors.muted,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Container(height: 1, color: AppColors.cardBorder)),
+        ],
+      ),
+    );
+  }
+}
+
+/// A single line in the dialog when an organisation has nothing coming up.
+class _DialogNote extends StatelessWidget {
+  const _DialogNote({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7E6),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFF3D9A4)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.event_busy_outlined,
+              size: 24, color: Color(0xFF9A6B12)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 19,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF7A5410),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

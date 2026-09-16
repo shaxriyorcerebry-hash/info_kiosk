@@ -74,23 +74,28 @@ class _HomeScreenState extends State<HomeScreen>
     final t = Tr(lang);
     return LayoutBuilder(
       builder: (context, box) {
-        // The kiosk is a large portrait touch panel: the grid is laid out
-        // for 2 columns x 6 rows. Card height is derived from the viewport
-        // so that a full 12-card set would exactly fill the screen — the
-        // current 8 cards simply occupy the first four rows at that same
-        // size. On landscape (development) windows, fall back to the
-        // fixed-width wrap with natural heights.
+        // The kiosk is a large portrait touch panel: two columns, with the
+        // card height derived from the viewport and the rows the published
+        // cards actually need, up to the height a card is drawn for. The
+        // block is centred, so six cards (three rows) do not leave the lower
+        // half of a 1080x1920 screen empty; a twelve-card set still fits.
+        // On landscape (development) windows, fall back to the fixed-width
+        // wrap with natural heights.
+        final cards = widget.state.content.cards;
         final portrait = box.maxHeight > box.maxWidth;
         final gridWidth = portrait
             ? box.maxWidth - 64
             : math.min(box.maxWidth - 64, 1560.0);
         final cardWidth = portrait ? (gridWidth - 26) / 2 : 440.0;
-        // ~175px of chrome above the grid (paddings + title block) and five
-        // 26px row gaps between six rows.
+        final rows = math.max(1, (cards.length / 2).ceil());
+        // ~175px of chrome above the grid (paddings + title block), 32px of
+        // padding below it and a 26px gap between rows. Leaving the bottom
+        // padding out overflowed a shorter portrait screen into a scrollbar
+        // once the rows filled it.
         final cardHeight = portrait
-            ? ((box.maxHeight - 175 - 5 * 26) / 6).clamp(190.0, 320.0)
+            ? ((box.maxHeight - 215 - (rows - 1) * 26) / rows)
+                .clamp(190.0, 320.0)
             : null;
-        final cards = widget.state.content.cards;
         if (cards.isEmpty) {
           return EmptyContent(
             lang: lang,
@@ -98,7 +103,8 @@ class _HomeScreenState extends State<HomeScreen>
             offline: widget.state.content.unreachable,
           );
         }
-        return _buildScroll(t, lang, cards, gridWidth, cardWidth, cardHeight);
+        return _buildScroll(t, lang, cards, gridWidth, cardWidth, cardHeight,
+            centreIn: portrait ? box.maxHeight : null);
       },
     );
   }
@@ -109,64 +115,73 @@ class _HomeScreenState extends State<HomeScreen>
     List<CardDef> cards,
     double gridWidth,
     double cardWidth,
-    double? cardHeight,
-  ) {
+    double? cardHeight, {
+    double? centreIn,
+  }) {
+    const padding = EdgeInsets.fromLTRB(32, 24, 32, 32);
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(32, 24, 32, 32),
-      child: Column(
-        children: [
-          const SizedBox(height: 18),
-          FadeTransition(
-            opacity: _slot(0),
-            child: Column(
-              children: [
-                Text(
-                  t.homeTitle,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 38,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.primaryDark,
-                    letterSpacing: 0.2,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  width: 76,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(3),
-                    gradient: const LinearGradient(
-                      colors: [AppColors.primary, Color(0xFF7FB2E8)],
+      padding: padding,
+      child: ConstrainedBox(
+        // Fills the viewport so a short grid sits in the middle of it.
+        constraints: BoxConstraints(
+          minHeight: centreIn == null ? 0 : centreIn - padding.vertical,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const SizedBox(height: 18),
+            FadeTransition(
+              opacity: _slot(0),
+              child: Column(
+                children: [
+                  Text(
+                    t.homeTitle,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 38,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primaryDark,
+                      letterSpacing: 0.2,
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 34),
-          ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: gridWidth),
-            child: Wrap(
-              spacing: 26,
-              runSpacing: 26,
-              alignment: WrapAlignment.center,
-              children: [
-                for (var i = 0; i < cards.length; i++)
-                  _RisingIn(
-                    animation: _slot(i + 1),
-                    child: _HomeCard(
-                      card: cards[i],
-                      lang: lang,
-                      width: cardWidth,
-                      height: cardHeight,
-                      onTap: () => widget.state.open(cards[i].id),
+                  const SizedBox(height: 16),
+                  Container(
+                    width: 76,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(3),
+                      gradient: const LinearGradient(
+                        colors: [AppColors.primary, Color(0xFF7FB2E8)],
+                      ),
                     ),
                   ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 34),
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: gridWidth),
+              child: Wrap(
+                spacing: 26,
+                runSpacing: 26,
+                alignment: WrapAlignment.center,
+                children: [
+                  for (var i = 0; i < cards.length; i++)
+                    _RisingIn(
+                      animation: _slot(i + 1),
+                      child: _HomeCard(
+                        card: cards[i],
+                        lang: lang,
+                        width: cardWidth,
+                        height: cardHeight,
+                        onTap: () => widget.state.open(cards[i].id),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

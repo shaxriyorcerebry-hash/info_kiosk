@@ -43,6 +43,7 @@ git -C ../Projects-FinTech pull
 | 2 | `…/qabulhona/09 - Mobile (App)/Info Kiosk/00 - Info Kiosk ro'yxati.md` | **⭐ Shu ilova hujjatlari** (index) |
 | 3 | `…/qabulhona/09 - Mobile (App)/Info Kiosk/10 - Backend ulanishi bajarildi + qurilma tuzatishlari (2026-07).md` | **⭐ Joriy arxitektura**: 8 kontent API, kesh, sensor, AI, TLS, vositalar |
 | 4 | `…/qabulhona/09 - Mobile (App)/Info Kiosk/11 - Joriy kod holati (2026-08-03).md` | Kod auditi. `01`, `02`, `05`–`07` dagi «offline / API yo'q» jumlalari **tarixiy** |
+| 4b | `…/qabulhona/09 - Mobile (App)/Info Kiosk/12 - Hokim qabul vaqti, vertikal ekran, v1.6.0 (2026-09-16).md` | **⭐ Joriy release**: hokim sanasi, qo'lda yangilash, vertikal ekran, sayyor tartibi, paket |
 | 5 | `…/qabulhona/01 - Vazifalar (Todo)/03 - Mobile.md` | **⭐ Mening vazifalarim** — fayl katta (1300+ qator): `info_kiosk` / `Info Kiosk` bo'yicha qidiring |
 | 6 | `…/qabulhona/02 - API/25 - Info Kiosk — Backend so'rovi (seed, reception-schedule, 3 maydon, RAG).md` | API contract (Backend yozadi, men o'qiyman) |
 | 7 | `…/qabulhona/05 - Buglar (Bugs)/BUG-001 - Info Kiosk qurilmasida TLS sertifikat xatosi.md` | Qurilmadagi TLS muammosi va yechimi |
@@ -70,8 +71,8 @@ Ochiq vazifa topilmasa — shuni ayt va nima qilishni **tanlov shaklida** so'ra.
 | Flutter / Dart | Dart SDK `^3.12.2`, lint: `flutter_lints` |
 | State | `ChangeNotifier`: `KioskState` (til, ekran, chat, ovoz) + `ContentStore` (kontent) |
 | HTTP | `dart:io` `HttpClient` — faqat `KioskTls.client()` (`services/tls.dart`) orqali; tarmoq paketi yo'q |
-| Kontent | `KioskContentApi` — 8 bo'lim, `?lang=all`, `If-None-Match` → `304`, konvert `{data:…}` va top-level shakl |
-| Kesh | `%LOCALAPPDATA%\info_kiosk\content\` — har bo'lim JSON + `log.txt`; fonda har 15 daqiqada yangilanadi |
+| Kontent | `KioskContentApi` — 8 bo'lim (`/kiosk/info/*`), `?lang=all`, `If-None-Match` → `304`, konvert `{data:…}` va top-level shakl; + `fetchReceptionPoints()` (hokim sanasi) |
+| Kesh | `%LOCALAPPDATA%\info_kiosk\content\` — har bo'lim JSON + `reception-points.json` + `log.txt`; fonda har **5** daqiqada yangilanadi, logotipni 3 s bosish — darhol |
 | Routing | Yo'q — `KioskRoot` + `Screen` enum (`home, qabul, jadval, masalalar, faq, ai, contact`) |
 | AI | `AiApi` (`/avatar/ask`, `/avatar/converse`, `/avatar/voice-token`) + `AiResponder` (lokal FAQ/xizmatlar) |
 | Ovoz | Gemini Live — `webview_windows` (WebView2) + `assets/web/genai.min.js` (`VoiceSession`); oflayn — Windows SAPI (`SpeechService`, yashirin PowerShell) |
@@ -79,7 +80,7 @@ Ochiq vazifa topilmasa — shuni ayt va nima qilishni **tanlov shaklida** so'ra.
 | Konfiguratsiya | `lib/src/config.dart` — `const` (build vaqtida); `idle_seconds` va idora ma'lumotlari backend `config` bo'limidan ustun keladi |
 | Platforma paketlari | `window_manager`, `wakelock_plus`, `webview_windows` |
 | Assetlar | logo · `office_map.png` (oflayn xarita) · `web/genai.min.js` · `certs/roots.pem` |
-| Test | `test/` — 8 fayl, 53 test (kontent, backend-only, AI, exit paroli, idle/ovoz, state, sensor, widget) |
+| Test | `test/` — 10 fayl, 82 test (kontent, backend-only, AI, exit paroli, idle/ovoz, state, sensor, widget, hokim sanasi + vertikal ekran + qo'lda yangilash, sayyor oynasi) |
 
 ### Papka tuzilmasi (`lib/`)
 ```
@@ -98,15 +99,17 @@ lib/
     ├── ai_responder.dart             # lokal FAQ/xizmatlar bo'yicha token-overlap javob
     ├── data.dart · masalalar_data.dart · sayyor_data.dart   # ⚠️ faqat SEED manbasi (runtime'da emas)
     ├── services/
-    │   ├── kiosk_content_api.dart    # 8 bo'lim HTTP klient
-    │   ├── content_store.dart        # kesh + fon yangilash + log.txt
+    │   ├── kiosk_content_api.dart    # 8 bo'lim + reception-points HTTP klient
+    │   ├── content_store.dart        # kesh + fon yangilash (5 daq., Future<bool>) + log.txt + officialsShown
+    │   ├── hokim_reception.dart      # HokimReception — hokim panelda belgilagan sana (UTC+5)
     │   ├── ai_api.dart               # /avatar/ask · converse · voice-token
     │   ├── voice_session.dart        # Gemini Live (WebView2, kiosk-voice.local)
     │   ├── speech_service.dart       # Windows SAPI ko'prigi
     │   └── tls.dart                  # KioskTls — ichki ildiz sertifikatlari (BUG-001)
     ├── screens/                      # home, qabul, jadval, masalalar, faq, ai, contact
-    └── widgets/                      # header_bar, section_nav, footer_bar, empty_content, glass_panel,
-                                      # info_card, kiosk_background, pressable, exit_button, exit_password_dialog
+    └── widgets/                      # header_bar (logo 3 s → yangilash), section_nav, footer_bar, empty_content,
+                                      # glass_panel, info_card, kiosk_background, pressable, exit_button,
+                                      # exit_password_dialog, staff_refresh (runStaffRefresh + xabar)
 ```
 
 ### Tipik buyruqlar (PowerShell)
@@ -124,7 +127,7 @@ flutter build windows --release                     # → build\windows\x64\runn
 
 | Buyruq | Nima qiladi |
 |--------|-------------|
-| `flutter test tool/content_probe.dart` | Jonli backend'ni ilova ko'zi bilan tekshiradi (8 bo'lim) |
+| `flutter test tool/content_probe.dart` | Jonli backend'ni ilova ko'zi bilan tekshiradi (8 bo'lim + hokim sanasi) |
 | `flutter test tool/tls_probe.dart` | Tizim do'konisiz ham ichki sertifikatlar yetarlimi |
 | `flutter test tool/ai_answer_probe.dart` | AI real savollarga javob beradimi |
 | `flutter test tool/export_seed.dart` | Ilovadagi kontentni backend seed JSON + markdown qilib chiqaradi |
@@ -132,13 +135,20 @@ flutter build windows --release                     # → build\windows\x64\runn
 
 > Kiosk rejimidan chiqish — pastdagi tugma → parol (`KioskConfig.exitPassword`).
 > Kioskda konsol yo'q — xato matni: `%LOCALAPPDATA%\info_kiosk\content\log.txt`.
+> Ma'lumotni darhol yangilash — tepadagi **logotipni 3 soniya** bosib turish (natija pastda xabar bilan).
+>
+> Dev mashinada `flutter` PATH da bo'lmasligi mumkin: `$env:Path = "C:\src\flutter\bin;$env:Path"`.
+> `flutter build windows` plaginlar uchun **Developer Mode** talab qiladi. `flutter pub get` yangi SDK'da
+> `analysis_options.yaml` ga `analyzer: exclude:` qo'shadi va plugin registrant fayllarini qayta yozadi — bu kutilgan.
+> `KioskRoot` ni testda ko'tarma — `initSpeech()` haqiqiy PowerShell ochadi; ekranlarni alohida chiz.
 
 ### Release
 1. `pubspec.yaml` versiyasini oshir (`version:` qatori) va `tool/OQING.txt` dagi versiyani yangila
 2. `flutter analyze` + `flutter test` — ikkalasi toza bo'lsin; tarmoq bo'lsa `tool/content_probe.dart` ham
 3. `flutter build windows --release`
-4. `build\windows\x64\runner\Release\` ichini (+ `OQING.txt`, `kiosk_diagnostika.ps1`) zip qil →
-   `dist/XalqQabulxonasi_Kiosk_v<versiya>_win-x64.zip` (eski zip'larga **tegma** — har versiya alohida fayl)
+4. `build\windows\x64\runner\Release\` ichini (+ `tool/OQING.txt` → `O'QING.txt`, `kiosk_diagnostika.ps1`)
+   `XalqQabulxonasi_Kiosk\` papkasi ichida zip qil →
+   `dist/XalqQabulxonasi_Kiosk_v<versiya>_win-x64.zip` (eski zip'larga **tegma** — har versiya alohida fayl; v1.6.0 = 31 fayl)
 5. `dist/`, `build/`, `.dart_tool/`, `windows/flutter/ephemeral/` — `.gitignore` da (GitHub 100 MB limit).
    Tafsilot: `GITHUBGA_TUSHMAGAN_FAYLLAR.md`, `QAYTA_TIKLASH.md`
 
@@ -154,8 +164,10 @@ flutter build windows --release                     # → build\windows\x64\runn
    «Server bilan bog'lanib bo'lmadi» (texnik xodimga), «Ma'lumot kiritilmagan» (muharrirga) bilan aralashmasin.
 3. **Bitta buzuq bo'lim** qolgan 7 tasini yiqitmaydi; buzuq yozuv tashlanadi, tarjima yo'q bo'lsa `uz` ga tushadi.
 4. **8 bo'lim:** `sections, config, reception, reception-schedule, faq, topics, mobile-schedule, services`.
-   Hammasi `?lang=all` — til almashtirish tarmoqqa chiqmaydi. `reception-schedule` →
-   `/kiosk/reception-schedule` (alias; `shaxiy_qabul_kiosk` bilan umumiy manba).
+   Hammasi `/kiosk/info/<bo'lim>?lang=all` — til almashtirish tarmoqqa chiqmaydi. `reception-schedule` ham
+   `/kiosk/info/` ostida (2026-09-16 dan; `shaxiy_qabul_kiosk` bilan bir manzil). Eski `/kiosk/reception-schedule`
+   aliasi `ETag` bermaydi va 2026-07-28 da `404` edi — unga qaytma.
+   Har bir yangilashda (5 daq.) **`GET /kiosk/reception-points`** ham so'raladi (bitta so'rov bo'lib birlashadi).
 5. **Har HTTP so'rov `KioskTls.client()` orqali** — ichki `roots.pem` tizim do'koni ustiga qo'shiladi
    (BUG-001). Yangi `HttpClient()` ni to'g'ridan-to'g'ri yaratma.
 6. **Sensor ekran:** hover'ga bog'liq UI yo'q (feedback bosilganda); `KioskScrollBehavior` da
@@ -170,6 +182,17 @@ flutter build windows --release                     # → build\windows\x64\runn
 10. **3 til to'liq:** har yangi UI matni `uz` + `ru` + `en` uchalasida.
 11. **Minimal paketlar:** hozir `window_manager` + `wakelock_plus` + `webview_windows`.
     Yangi paket qo'shishdan oldin foydalanuvchidan **tanlov shaklida** so'ra.
+12. **Hokim sanasi** (2026-09-16): `reception-points` → `ticket_prefix: "H"` → `next_reception_at` (UTC → Toshkent +5).
+    «Shaxsiy qabul»da faqat hokim kartasi (`isHokimOfficial`) `ContentStore.officialsShown` orqali o'zgaradi:
+    sana bor → katta sana + vaqt + joy; yo'q/o'tgan → «Qabul vaqti belgilanmagan»; noma'lum → haftalik matn.
+    `reception-schedule` bo'sh bo'lsa sana karta **yaratmaydi** — «Ma'lumot kiritilmagan» qoladi (invariant 1).
+13. **Vertikal ekran birinchi:** zal kiosklari 1080×1920 portret (Windows 10). UI o'zgarsa: 100% da
+    «Shaxsiy qabul» aylantirishsiz sig'sin; 864/720 px (125/150%) da overflow bo'lmasin; header < 1000 px — 2 qator;
+    bosh sahifa kartalari haqiqiy qatorlar soniga qarab va markazda. Ahem (test shrifti) haqiqiydan farq qiladi —
+    o'lchash uchun Segoe UI (`C:\Windows\Fonts`) ni `FontLoader` bilan yukla.
+14. **Sayyor qabul oynasi:** avval bugungi/kelgusi qabullar, keyin «O'tgan qabullar» (xira);
+    kelgusi yo'q bo'lsa — ogohlantirish. Hech narsa yashirilmaydi (`MobileScheduleInfo.isPast`).
+    `sayyor_data.dart` generatsiya qilinadi — unga mantiq qo'shma.
 
 ### 🛡️ Xavfsizlik
 - `exitPassword` manba kodda ochiq (`config.dart`) — u faqat zaldagi tasodifiy odamni to'xtatadi.

@@ -10,6 +10,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:info_kiosk/src/config.dart';
+import 'package:info_kiosk/src/data.dart';
 import 'package:info_kiosk/src/l10n.dart';
 import 'package:info_kiosk/src/services/content_store.dart';
 
@@ -61,6 +62,19 @@ void main() {
     stdout.writeln(
       '${mark(store.services.isNotEmpty)}  services         '
       '${store.services.length} xizmat',
+    );
+    final hokim = store.hokim;
+    final at = hokim?.at;
+    stdout.writeln(
+      '${mark(at != null)}  reception-points hokim: '
+      '${hokim == null ? 'nuqta topilmadi' : at == null ? 'vaqt belgilanmagan' : '${AppData.receptionDate(at, Lang.uz)} '
+          '${at.hour.toString().padLeft(2, '0')}:${at.minute.toString().padLeft(2, '0')}'
+          ' · ${hokim.location}'}',
+    );
+    final shown = store.officialsShown?.officials ?? const [];
+    final governor = shown.where(isHokimOfficial).firstOrNull;
+    stdout.writeln(
+      '      hokim kartasi: ${governor == null ? '-' : '${governor.day[Lang.uz]} ${governor.time}'}',
     );
 
     stdout.writeln('\nlaw_ref: ${store.office?.lawRef[Lang.uz] ?? '-'}');

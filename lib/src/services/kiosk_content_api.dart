@@ -62,27 +62,63 @@ class KioskContentApi {
     'services',
   ];
 
-  /// Sections that live outside the `/kiosk/info/` prefix.
-  ///
-  /// The officials list is shared with the standalone in-person reception
-  /// kiosk, so it stays where that kiosk already reads it from.
-  static const Map<String, String> _paths = {
-    'reception-schedule': '/kiosk/reception-schedule',
-  };
+  /// The reception points (`id`, `name_uz`, `ticket_prefix`, `sort_order`,
+  /// `next_reception_at`, `reception_location`, …) — a bare list, outside the
+  /// section scheme. The governor's carries the date set in the dashboard.
+  static const String receptionPointsPath = '/kiosk/reception-points';
 
   final String apiBase;
   final Duration timeout;
 
   bool get enabled => apiBase.trim().isNotEmpty;
 
-  String _pathFor(String section) => _paths[section] ?? '/kiosk/info/$section';
+  /// Every section, `reception-schedule` included, lives under
+  /// `/kiosk/info/`. The `/kiosk/reception-schedule` alias the kiosk used to
+  /// read carries no `ETag` (so no `304`) and answered `404` on 2026-07-28;
+  /// the standalone in-person reception kiosk reads this same path.
+  String _pathFor(String section) => '/kiosk/info/$section';
 
   /// Fetches one section. Pass [etag] to be told `304` instead of being sent
   /// bytes that have not changed. Throws on any network or shape failure; the
   /// caller falls back to its cache.
   Future<ContentResponse> fetch(String section, {String? etag}) async {
+    final res = await _get('${_pathFor(section)}?lang=all', etag: etag);
+    if (res == null) return ContentResponse.notModified(section);
+    if (res.body.isEmpty) return ContentResponse(section: section, data: null);
+
+    final decoded = jsonDecode(res.body);
+    if (decoded is! Map) {
+      throw FormatException('$section: response is not an object');
+    }
+    final map = decoded.cast<String, dynamic>();
+    return ContentResponse(
+      section: section,
+      data: payloadOf(map),
+      version: map['version'] is int ? map['version'] as int : 0,
+      etag: res.etag,
+    );
+  }
+
+  /// The reception point list exactly as served, for the cache to keep.
+  /// Throws on any network or shape failure.
+  Future<List<dynamic>> fetchReceptionPoints() async {
+    final res = await _get(receptionPointsPath);
+    final decoded = jsonDecode(res!.body);
+    // Accept a wrapped list too, should the endpoint ever gain an envelope.
+    final list = decoded is Map ? decoded['data'] ?? decoded['items'] : decoded;
+    if (list is! List) {
+      throw const FormatException('reception-points: not a list');
+    }
+    return list;
+  }
+
+  /// One GET through the kiosk's TLS trust. Null means `304 Not Modified`.
+  Future<({String body, String? etag})?> _get(
+    String pathAndQuery, {
+    String? etag,
+  }) async {
     if (!enabled) throw const SocketException('backend not configured');
-    final uri = Uri.parse('$apiBase${_pathFor(section)}?lang=all');
+    final uri = Uri.parse('$apiBase$pathAndQuery');
 
     final client = await KioskTls.client(connectionTimeout: timeout);
     try {
@@ -95,25 +131,13 @@ class KioskContentApi {
 
       if (res.statusCode == HttpStatus.notModified) {
         await res.drain<void>();
-        return ContentResponse.notModified(section);
+        return null;
       }
       final body = await res.transform(utf8.decoder).join().timeout(timeout);
       if (res.statusCode < 200 || res.statusCode >= 300) {
         throw HttpException('GET ${uri.path} -> ${res.statusCode}');
       }
-      if (body.isEmpty) return ContentResponse(section: section, data: null);
-
-      final decoded = jsonDecode(body);
-      if (decoded is! Map) {
-        throw FormatException('$section: response is not an object');
-      }
-      final map = decoded.cast<String, dynamic>();
-      return ContentResponse(
-        section: section,
-        data: payloadOf(map),
-        version: map['version'] is int ? map['version'] as int : 0,
-        etag: res.headers.value(HttpHeaders.etagHeader),
-      );
+      return (body: body, etag: res.headers.value(HttpHeaders.etagHeader));
     } finally {
       client.close(force: true);
     }

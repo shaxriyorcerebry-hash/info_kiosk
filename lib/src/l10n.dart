@@ -266,4 +266,59 @@ class Tr {
         'Закон Республики Узбекистан № 445, статья 29',
         'Law of the Republic of Uzbekistan No. 445, Article 29',
       ]);
+
+  /// The governor's card when no reception date is set, or the last one has
+  /// passed.
+  String get receptionUnset => _p(const [
+        'Qabul vaqti belgilanmagan',
+        'Время приёма не назначено',
+        'Reception time not set',
+      ]);
+
+  /// Label over the governor's dated (or not yet dated) reception.
+  String get nextReception => _p(const [
+        'Navbatdagi qabul',
+        'Ближайший приём',
+        'Next reception',
+      ]);
+
+  /// Label over the governor's weekly slot, while no date is known.
+  String get receptionDayLabel => _p(const [
+        'Qabul kuni',
+        'День приёма',
+        'Reception day',
+      ]);
+
+  /// Mobile-reception dialog: divider above the stops already held, and the
+  /// line shown when none are left to come.
+  String get pastVisits => _p(const [
+        "O'tgan qabullar",
+        'Прошедшие приёмы',
+        'Past receptions',
+      ]);
+
+  String get noUpcomingVisits => _p(const [
+        'Yaqin kunlarda sayyor qabul rejalashtirilmagan',
+        'Ближайших выездных приёмов не запланировано',
+        'No upcoming mobile receptions scheduled',
+      ]);
+
+  /// Staff refresh (long press on the logo): under way / done / failed.
+  String get refreshing => _p(const [
+        "Ma'lumot yangilanmoqda…",
+        'Обновление данных…',
+        'Updating…',
+      ]);
+
+  String get refreshDone => _p(const [
+        "Ma'lumot yangilandi",
+        'Данные обновлены',
+        'Data updated',
+      ]);
+
+  String get refreshFailed => _p(const [
+        "Server bilan bog'lanib bo'lmadi — oldingi ma'lumot ko'rsatilmoqda",
+        'Нет связи с сервером — показаны прежние данные',
+        'Could not reach the server — showing the previous data',
+      ]);
 }

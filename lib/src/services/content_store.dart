@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 
 import '../content_models.dart';
 import '../data.dart';
+import 'hokim_reception.dart';
 import 'kiosk_content_api.dart';
 
 /// Everything the kiosk shows, as delivered by the backend.
@@ -28,15 +29,20 @@ import 'kiosk_content_api.dart';
 ///   before the network does — keeps showing what it last knew. Only a
 ///   deliberate `data: null` from the server clears it.
 class ContentStore extends ChangeNotifier {
+  /// [refreshEvery] is short so a reception date the governor sets reaches
+  /// the hall within minutes; unchanged sections cost a `304` each.
   ContentStore({
     KioskContentApi? api,
     Directory? cacheDir,
-    this.refreshEvery = const Duration(minutes: 15),
+    this.refreshEvery = const Duration(minutes: 5),
+    DateTime Function()? clock,
   }) : _api = api ?? KioskContentApi(),
-       _cacheOverride = cacheDir;
+       _cacheOverride = cacheDir,
+       _clock = clock ?? DateTime.now;
 
   final KioskContentApi _api;
   final Duration refreshEvery;
+  final DateTime Function() _clock;
 
   /// Where tests point the cache; production resolves [_dir] instead.
   final Directory? _cacheOverride;
@@ -75,6 +81,27 @@ class ContentStore extends ChangeNotifier {
   FaqInfo? faq;
   List<ServiceInfo> services = const [];
 
+  /// The governor's dated reception (`GET /kiosk/reception-points`), or null
+  /// while it is unknown — then the governor's card keeps the weekly wording.
+  HokimReception? hokim;
+
+  /// [officials] as the screen draws them: the governor's card follows the
+  /// date the governor set ([hokim]); the deputies stay as published.
+  OfficialsInfo? get officialsShown {
+    final info = officials;
+    final h = hokim;
+    if (info == null || h == null) return info;
+    final i = info.officials.indexWhere(isHokimOfficial);
+    if (i < 0) return info;
+    return OfficialsInfo(
+      intro: info.intro,
+      note: info.note,
+      officials: [...info.officials]..[i] = h.applyTo(info.officials[i], _clock()),
+    );
+  }
+
+  String _hokimKey() => hokim?.keyAt(_clock()) ?? '';
+
   /// `ETag` per section, so a refresh that changes nothing costs one `304`.
   final Map<String, String> _etags = {};
 
@@ -92,12 +119,24 @@ class ContentStore extends ChangeNotifier {
     _timer ??= Timer.periodic(refreshEvery, (_) => refresh());
   }
 
-  /// Fetches every section once. Never throws.
-  Future<void> refresh() async {
-    if (!_api.enabled || _disposed) return;
+  /// Fetches every section and the reception points once — on the timer, and
+  /// when staff ask for it (a long press on the logo).
+  ///
+  /// True when every answer arrived. Never throws. A call while one is under
+  /// way joins it rather than sending the requests twice.
+  Future<bool> refresh() {
+    if (!_api.enabled || _disposed) return Future.value(false);
+    return _inFlight ??= _refreshAll().whenComplete(() => _inFlight = null);
+  }
+
+  Future<bool>? _inFlight;
+
+  Future<bool> _refreshAll() async {
     var changed = false;
     var reached = false;
+    var allOk = true;
     final wasUnreachable = unreachable;
+    final hokimBefore = _hokimKey();
     String? failure;
     for (final section in KioskContentApi.sections) {
       try {
@@ -114,7 +153,17 @@ class ContentStore extends ChangeNotifier {
         // kiosk stays on the last good copy rather than blanking a screen.
         debugPrint('content: $section failed, keeping cache ($e)');
         failure ??= '$section: $e';
+        allOk = false;
       }
+    }
+    try {
+      final points = await _api.fetchReceptionPoints();
+      hokim = HokimReception.fromPoints(points);
+      await _writeCacheRaw(_pointsFile, points);
+    } catch (e) {
+      debugPrint('content: reception-points failed, keeping cache ($e)');
+      failure ??= 'reception-points: $e';
+      allOk = false;
     }
     if (reached) {
       lastSync = DateTime.now();
@@ -123,7 +172,13 @@ class ContentStore extends ChangeNotifier {
       lastError = failure;
       _log(failure);
     }
-    if (changed || wasUnreachable != unreachable) _notify();
+    // The key also catches the reception day ending with nothing new fetched.
+    if (changed ||
+        wasUnreachable != unreachable ||
+        _hokimKey() != hokimBefore) {
+      _notify();
+    }
+    return allOk;
   }
 
   /// Appends a line to `<cache dir>\log.txt`.
@@ -154,6 +209,13 @@ class ContentStore extends ChangeNotifier {
   void applyPayload(String section, Map<String, dynamic>? data) {
     ready = true;
     if (_apply(section, data)) _notify();
+  }
+
+  /// Same as [applyPayload], for a `GET /kiosk/reception-points` list.
+  @visibleForTesting
+  void applyPoints(List<dynamic>? points) {
+    hokim = HokimReception.fromPoints(points);
+    _notify();
   }
 
   /// Puts the store in the state of a kiosk that has never reached the server.
@@ -228,6 +290,8 @@ class ContentStore extends ChangeNotifier {
 
   File _cacheFile(String section) => File('${_dir.path}/$section.json');
 
+  File get _pointsFile => File('${_dir.path}/reception-points.json');
+
   /// Loads whatever the last successful refresh left behind.
   ///
   /// A cache file holds the payload together with the `ETag` it came with, so
@@ -247,15 +311,26 @@ class ContentStore extends ChangeNotifier {
         debugPrint('content: cached $section unreadable ($e)');
       }
     }
+    try {
+      final file = _pointsFile;
+      if (file.existsSync()) {
+        final decoded = jsonDecode(await file.readAsString());
+        hokim = HokimReception.fromPoints(decoded is Map ? decoded['data'] : null);
+      }
+    } catch (e) {
+      debugPrint('content: cached reception-points unreadable ($e)');
+    }
   }
 
   Future<void> _writeCache(
     String section,
     Map<String, dynamic>? data,
     String? etag,
-  ) async {
+  ) =>
+      _writeCacheRaw(_cacheFile(section), data, etag);
+
+  Future<void> _writeCacheRaw(File file, Object? data, [String? etag]) async {
     try {
-      final file = _cacheFile(section);
       await file.parent.create(recursive: true);
       await file.writeAsString(
         jsonEncode({'etag': etag, 'data': data}),
@@ -263,7 +338,7 @@ class ContentStore extends ChangeNotifier {
       );
     } catch (e) {
       // A read-only profile costs the kiosk its offline copy, nothing more.
-      debugPrint('content: could not cache $section ($e)');
+      debugPrint('content: could not cache ${file.path} ($e)');
     }
   }
 }
