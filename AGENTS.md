@@ -43,7 +43,8 @@ git -C ../Projects-FinTech pull
 | 2 | `…/qabulhona/09 - Mobile (App)/Info Kiosk/00 - Info Kiosk ro'yxati.md` | **⭐ Shu ilova hujjatlari** (index) |
 | 3 | `…/qabulhona/09 - Mobile (App)/Info Kiosk/10 - Backend ulanishi bajarildi + qurilma tuzatishlari (2026-07).md` | **⭐ Joriy arxitektura**: 8 kontent API, kesh, sensor, AI, TLS, vositalar |
 | 4 | `…/qabulhona/09 - Mobile (App)/Info Kiosk/11 - Joriy kod holati (2026-08-03).md` | Kod auditi. `01`, `02`, `05`–`07` dagi «offline / API yo'q» jumlalari **tarixiy** |
-| 4b | `…/qabulhona/09 - Mobile (App)/Info Kiosk/12 - Hokim qabul vaqti, vertikal ekran, v1.6.0 (2026-09-16).md` | **⭐ Joriy release**: hokim sanasi, qo'lda yangilash, vertikal ekran, sayyor tartibi, paket |
+| 4b | `…/qabulhona/09 - Mobile (App)/Info Kiosk/12 - Hokim qabul vaqti, vertikal ekran, v1.6.0 (2026-09-16).md` | v1.6.0: hokim sanasi, qo'lda yangilash, vertikal ekran, sayyor tartibi, 5 bug |
+| 4c | `…/qabulhona/09 - Mobile (App)/Info Kiosk/13 - Joriy kod holati v1.6.1 (2026-09-16).md` | **⭐ Joriy release** v1.6.1: bosh sahifa header ostidan, paket |
 | 5 | `…/qabulhona/01 - Vazifalar (Todo)/03 - Mobile.md` | **⭐ Mening vazifalarim** — fayl katta (1300+ qator): `info_kiosk` / `Info Kiosk` bo'yicha qidiring |
 | 6 | `…/qabulhona/02 - API/25 - Info Kiosk — Backend so'rovi (seed, reception-schedule, 3 maydon, RAG).md` | API contract (Backend yozadi, men o'qiyman) |
 | 7 | `…/qabulhona/05 - Buglar (Bugs)/BUG-001 - Info Kiosk qurilmasida TLS sertifikat xatosi.md` | Qurilmadagi TLS muammosi va yechimi |
@@ -188,7 +189,8 @@ flutter build windows --release                     # → build\windows\x64\runn
     `reception-schedule` bo'sh bo'lsa sana karta **yaratmaydi** — «Ma'lumot kiritilmagan» qoladi (invariant 1).
 13. **Vertikal ekran birinchi:** zal kiosklari 1080×1920 portret (Windows 10). UI o'zgarsa: 100% da
     «Shaxsiy qabul» aylantirishsiz sig'sin; 864/720 px (125/150%) da overflow bo'lmasin; header < 1000 px — 2 qator;
-    bosh sahifa kartalari haqiqiy qatorlar soniga qarab va markazda. Ahem (test shrifti) haqiqiydan farq qiladi —
+    bosh sahifa kartalari haqiqiy qatorlar soniga qarab, blok esa **header ostidan** boshlanadi
+    (markazga tekislama — foydalanuvchi talabi, v1.6.1). Ahem (test shrifti) haqiqiydan farq qiladi —
     o'lchash uchun Segoe UI (`C:\Windows\Fonts`) ni `FontLoader` bilan yukla.
 14. **Sayyor qabul oynasi:** avval bugungi/kelgusi qabullar, keyin «O'tgan qabullar» (xira);
     kelgusi yo'q bo'lsa — ogohlantirish. Hech narsa yashirilmaydi (`MobileScheduleInfo.isPast`).

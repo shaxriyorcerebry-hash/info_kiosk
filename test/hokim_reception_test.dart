@@ -375,9 +375,11 @@ void main() {
           find.byType(Scrollable).first,
         );
         expect(scroll.position.maxScrollExtent, 0);
-        // …and the block sits in the middle rather than at the top.
+        // …and the block starts right under the header, not centred.
         final title = tester.getTopLeft(find.text("Kerakli bo'limni tanlang"));
-        expect(title.dy, greaterThan(40));
+        expect(title.dy, lessThan(60));
+        final lastCard = tester.getBottomLeft(find.text('Bo\'lim 5'));
+        expect(lastCard.dy, lessThan(size.height * 0.75));
         expect(tester.takeException(), isNull);
       });
     }

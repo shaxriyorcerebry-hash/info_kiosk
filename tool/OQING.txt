@@ -2,7 +2,7 @@
   XALQ QABULXONASI — AXBOROT KIOSKI
   O'zbekiston Respublikasi Prezidentining
   Toshkent viloyatidagi Xalq qabulxonasi
-  Windows x64 | versiya 1.6.0
+  Windows x64 | versiya 1.6.1
 ========================================================
 
 ISHGA TUSHIRISH
