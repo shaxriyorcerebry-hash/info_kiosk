@@ -52,6 +52,12 @@ class KioskTls {
     return _context;
   }
 
+  /// Sinxron variant — [KioskUpdater] kabi `HttpClient Function()` kutadigan
+  /// joylar uchun. [context] oldin bir marta kutilgan bo'lishi kerak (main()
+  /// da shunday qilinadi); kontekst yuklanmagan bo'lsa — tizim ildizlari bilan
+  /// oddiy client, xuddi [client] dagi kabi.
+  static HttpClient cachedClient() => HttpClient(context: _context);
+
   /// An HTTP client that trusts both the system roots and the bundled ones.
   static Future<HttpClient> client({Duration? connectionTimeout}) async {
     final ctx = await context();

@@ -1,3 +1,6 @@
+import 'dart:convert' show utf8;
+
+import 'package:crypto/crypto.dart' show sha256;
 import 'package:flutter/foundation.dart' show kReleaseMode;
 
 import 'l10n.dart';
@@ -56,12 +59,23 @@ class KioskConfig {
   /// release build that ships to the kiosk.
   static const bool hideCursor = kReleaseMode;
 
-  /// Password required to leave kiosk mode, asked for by the exit button.
+  /// Kiosk rejimidan chiqish parolining SHA-256 xeshi (hex, kichik harf).
   ///
-  /// This only stops a visitor walking up and closing the kiosk; it is
-  /// compiled into the executable and so is not a secret from anyone with
-  /// access to the files on the machine.
-  static const String exitPassword = '20median47';
+  /// Parolning o'zi manba kodida ham, exe ichida ham saqlanmaydi — faqat
+  /// xeshi. Xodimlar uchun parol o'zgarmagan. Parolni almashtirish:
+  /// yangi parolning SHA-256 xeshini hisoblab, shu qiymatni almashtiring.
+  /// Bu baribir faqat tasodifiy tashrif buyuruvchini to'xtatadi — qisqa
+  /// parolni xeshdan tanlab topish mumkin, shuning uchun u haqiqiy sir emas.
+  static const String exitPasswordSha256 =
+      '46b9b42866cf2dbb17d311a8e036bef1f14b2f7a463a5515c3b7845f004fea20';
+
+  /// Kiritilgan matnning SHA-256 xeshi (hex).
+  static String hashPassword(String input) =>
+      sha256.convert(utf8.encode(input)).toString();
+
+  /// Kiritilgan parol to'g'rimi — xeshlar solishtiriladi.
+  static bool isExitPassword(String input) =>
+      hashPassword(input) == exitPasswordSha256;
 
   static const String logoAsset = 'assets/images/xalq_qabulxona_icon.png';
 

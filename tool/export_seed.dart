@@ -431,7 +431,7 @@ String configMd(Map<String, Object?> config, Map<String, Object?> sections) {
   b.writeln('| `location` | lat ${loc['lat']}, lon ${loc['lon']} | Kontakt ekranidagi xarita nuqtasi |');
   b.writeln('| `idle_seconds` | ${config['idle_seconds']} | Bo\'sh turganda bosh sahifaga qaytish (soniya) |');
   b.writeln('\n> Xarita rasmi (`assets/images/office_map.png`) — offline OSM tayl, **ilovada qoladi**.');
-  b.writeln('> Chiqish paroli (`KioskConfig.exitPassword`) — **ilovada qoladi**, backendга yuborilmaydi.\n');
+  b.writeln('> Chiqish paroli (`KioskConfig.exitPasswordSha256`, faqat xeshi) — **ilovada qoladi**, backendга yuborilmaydi.\n');
 
   b.writeln('---\n\n## 2️⃣ `sections` — bosh sahifa kartalari (6 ta)\n');
   b.writeln('| # | `key` | `icon` | Sarlavha (uz) | Sarlavha (ru) | Sarlavha (en) |');

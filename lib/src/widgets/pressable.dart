@@ -17,6 +17,7 @@ class Pressable extends StatefulWidget {
   const Pressable({
     super.key,
     required this.onTap,
+    this.onLongPress,
     this.child,
     this.builder,
     this.pressedScale = 0.955,
@@ -26,6 +27,10 @@ class Pressable extends StatefulWidget {
        );
 
   final VoidCallback onTap;
+
+  /// Uzoq bosish (ixtiyoriy) — masalan, «Chiqish» tugmasidagi xodim sozlamalari.
+  /// Berilmasa oddiy bosish avvalgidek ishlaydi.
+  final VoidCallback? onLongPress;
 
   /// Static content, used when the child does not care about the press state.
   final Widget? child;
@@ -54,6 +59,7 @@ class _PressableState extends State<Pressable> {
       onTapCancel: () => _set(false),
       onTapUp: (_) => _set(false),
       onTap: widget.onTap,
+      onLongPress: widget.onLongPress,
       child: AnimatedScale(
         scale: _down ? widget.pressedScale : 1.0,
         duration: Duration(milliseconds: _down ? 80 : 220),

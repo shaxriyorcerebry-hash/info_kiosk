@@ -14,6 +14,8 @@ migrate_working_dir/
 
 # Release artifacts — built zips belong on GitHub Releases, not in git history.
 /dist/
+# Lokal sinov build'lari (release-windows.ps1 -Test -OutDir dist-test)
+/dist-test/
 
 # IntelliJ related
 *.iml
@@ -56,3 +58,4 @@ app.*.map.json
 .dart_tool/
 /windows/flutter/ephemeral/
 *.pdb
+/dist-test-new/

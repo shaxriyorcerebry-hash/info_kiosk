@@ -2,17 +2,56 @@
   XALQ QABULXONASI — AXBOROT KIOSKI
   O'zbekiston Respublikasi Prezidentining
   Toshkent viloyatidagi Xalq qabulxonasi
-  Windows x64 | versiya 1.6.1
+  Windows x64 | versiya 1.7.0
 ========================================================
 
-ISHGA TUSHIRISH
----------------
-"info_kiosk.exe" faylini ishga tushiring.
+O'RNATISH (BIRINCHI MARTA)
+--------------------------
+"InfoKiosk_Setup_v1.7.0.exe" faylini ishga tushiring va
+ko'rsatmalarga amal qiling. Administrator huquqi shart emas.
 
-MUHIM: Ushbu papkadagi BARCHA fayllar kerak
-(info_kiosk.exe + *.dll + data papkasi).
-Faqat .exe faylni alohida ko'chirmang — ishlamaydi.
-Papkani butunligicha ko'chiring, masalan: C:\Kiosk\
+Dastur doim shu papkaga o'rnatiladi:
+    C:\Kiosk\InfoKiosk
+Boshlash menyusida "Info kiosk" yorlig'i paydo bo'ladi.
+O'rnatish tugagach dastur o'zi ochiladi.
+
+Papkani qo'lda ko'chirish (eski zip usuli) ENDI KERAK EMAS —
+Setup.exe barcha fayllarni (exe, dll, data papkasi va
+Visual C++ runtime) o'zi joylaydi.
+
+Eski versiya (zip'dan C:\Kiosk\... ga ko'chirilgan) bo'lsa:
+avval dasturdan chiqing, Setup.exe ni o'rnating, keyin
+eski papka va eski yorliqlarni o'chiring.
+
+
+ONLINE YANGILANISH (o'zi yangilanadi)
+------------------------------------
+Keyingi versiyalarni qo'lda o'rnatish SHART EMAS.
+Dastur ochilgandan 1 daqiqa keyin va har 3 soatda
+serverda yangi versiya bor-yo'qligini tekshiradi:
+    https://qabulxona.gennis.uz/downloads/kiosk/info_kiosk/
+
+Yangi versiya bo'lsa — fonda yuklab oladi va kiosk
+BO'SH turganda (2 daqiqa hech kim tegmasa, bosh sahifada,
+ovozli suhbat yo'q) ekranda 15 soniya ogohlantirish
+ko'rsatib, o'zi o'rnatadi va qayta ochiladi.
+Ogohlantirish paytida ekranga tegilsa — yangilanish
+keyinroqqa qoldiriladi.
+
+Yangilanish logi:
+    %LOCALAPPDATA%\InfoKiosk\update.log
+
+
+SOZLAMALAR (xodim uchun, parolsiz)
+----------------------------------
+Pastki o'ng burchakdagi ESHIK ikonasini BOSIB TURING
+(taxminan 1 soniya) — "Sozlamalar" paneli ochiladi:
+  - joriy va serverdagi versiya, holat;
+  - "Hozir tekshirish" — serverni darhol tekshirish;
+  - "Hozir o'rnatish" — yangi versiyani darhol o'rnatish
+    (15 soniya ogohlantirishdan keyin);
+  - "Log" — yangilanish tarixi;
+  - "Chiqish" — dasturdan chiqish (PAROL so'raladi).
 
 
 >>> BIRINCHI ISHGA TUSHIRISH — INTERNET SHART <<<
@@ -60,8 +99,9 @@ Oddiy ishga tushirilganda dastur avtomatik:
 
 CHIQISH
 -------
-Pastki o'ng burchakdagi ESHIK ikonasini bosing, so'ng
-PAROLNI kiriting. Parol qabulxona ma'muriyatida.
+Pastki o'ng burchakdagi ESHIK ikonasini bir marta bosing,
+so'ng PAROLNI kiriting. Parol qabulxona ma'muriyatida.
+(Yoki: eshikni bosib turing -> "Sozlamalar" -> "Chiqish".)
 
 
 OYNALI (TEST) REJIMI
@@ -70,10 +110,12 @@ Fullscreen'siz, oddiy oynada ochish uchun
 KIOSK_WINDOWED muhit o'zgaruvchisini bering.
 
 CMD:
+    cd /d C:\Kiosk\InfoKiosk
     set KIOSK_WINDOWED=1
     info_kiosk.exe
 
 PowerShell:
+    cd C:\Kiosk\InfoKiosk
     $env:KIOSK_WINDOWED=1
     .\info_kiosk.exe
 
@@ -114,7 +156,8 @@ Internet — birinchi ishga tushirishda SHART, keyin
 ma'lumot yangilanishi va AI uchun kerak.
 
 Visual C++ runtime fayllari (msvcp140.dll, vcruntime140.dll,
-vcruntime140_1.dll va b.) shu papka ichiga qo'shib qo'yilgan,
+vcruntime140_1.dll) Setup.exe bilan C:\Kiosk\InfoKiosk ga
+qo'shib o'rnatiladi,
 shuning uchun toza kompyuterda ham ishlaydi.
 
 Agar baribir "VCRUNTIME140_1.dll topilmadi" degan xato chiqsa,

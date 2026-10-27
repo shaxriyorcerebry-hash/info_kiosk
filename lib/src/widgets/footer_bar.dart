@@ -14,6 +14,7 @@ class FooterBar extends StatelessWidget {
     required this.palette,
     required this.lang,
     required this.onExit,
+    this.onSettings,
     this.orgName = '',
     this.phone = '',
   });
@@ -21,6 +22,9 @@ class FooterBar extends StatelessWidget {
   final Palette palette;
   final Lang lang;
   final VoidCallback onExit;
+
+  /// «Chiqish» tugmasini uzoq bosish — xodim sozlamalari paneli.
+  final VoidCallback? onSettings;
 
   /// Short organisation name and phone, as published by the backend. Empty
   /// until the office details have loaded.
@@ -90,7 +94,7 @@ class FooterBar extends StatelessWidget {
                   ),
                 ),
               ),
-              ExitButton(onTap: onExit),
+              ExitButton(onTap: onExit, onLongPress: onSettings),
             ],
           ),
         ),

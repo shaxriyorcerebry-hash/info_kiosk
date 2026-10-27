@@ -5,6 +5,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:webview_windows/webview_windows.dart';
 import 'package:window_manager/window_manager.dart';
 
+import '../core/update/kiosk_updater.dart';
 import 'config.dart';
 import 'kiosk_state.dart';
 import 'l10n.dart';
@@ -23,12 +24,23 @@ import 'widgets/footer_bar.dart';
 import 'widgets/header_bar.dart';
 import 'widgets/kiosk_background.dart';
 import 'widgets/section_nav.dart';
+import 'widgets/settings_panel.dart';
 import 'widgets/staff_refresh.dart';
 
 /// The root kiosk shell: owns state, the live clock and the idle-reset timer,
 /// and lays out background + header + section + content + footer + exit.
 class KioskRoot extends StatefulWidget {
   const KioskRoot({super.key});
+
+  static _KioskRootState? _active;
+
+  /// Yangilanishni hozir o'rnatsa bo'ladimi — [KioskUpdater] ning `canInstall`i.
+  ///
+  /// Faqat kiosk bosh sahifada turganda, ustida hech qanday dialog (parol,
+  /// sozlamalar, mobil qabul oynasi …) yo'q va ovozli AI suhbati / nutq
+  /// (Gemini Live yoki SAPI tinglash/gapirish, javob kutish) ishlamayotganda.
+  /// Teginishsiz 2 daqiqa sharti yangilovchining o'zida hisoblanadi.
+  static bool canInstallUpdate() => _active?._readyForUpdate ?? false;
 
   @override
   State<KioskRoot> createState() => _KioskRootState();
@@ -44,10 +56,14 @@ class _KioskRootState extends State<KioskRoot> with WindowListener {
   /// knows to dismiss it.
   bool _exitPrompt = false;
 
+  /// Xodim sozlamalari paneli ochiqmi (bo'shlik taymeri uni ham yopadi).
+  bool _settingsOpen = false;
+
   @override
   void initState() {
     super.initState();
     windowManager.addListener(this);
+    KioskRoot._active = this;
     _ticker = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
     // Content first: the screen has nothing to show until it arrives, and the
     // cached copy is on screen before the network is even tried.
@@ -58,6 +74,7 @@ class _KioskRootState extends State<KioskRoot> with WindowListener {
 
   @override
   void dispose() {
+    if (KioskRoot._active == this) KioskRoot._active = null;
     _ticker?.cancel();
     _clock.dispose();
     _state.dispose();
@@ -78,7 +95,8 @@ class _KioskRootState extends State<KioskRoot> with WindowListener {
         _state.chat.isNotEmpty ||
         _state.voiceBusy ||
         // An abandoned password prompt must not sit open on a public screen.
-        _exitPrompt;
+        _exitPrompt ||
+        _settingsOpen;
     // The office sets its own reset delay; the built-in value is only what a
     // kiosk uses before it has ever reached the backend.
     final limit =
@@ -96,6 +114,18 @@ class _KioskRootState extends State<KioskRoot> with WindowListener {
   }
 
   void _markActive() => _lastActivity = DateTime.now();
+
+  bool get _readyForUpdate =>
+      mounted &&
+      _state.isHome &&
+      !_state.voiceBusy &&
+      !_state.aiLoading &&
+      !_state.live.running &&
+      !_exitPrompt &&
+      !_settingsOpen &&
+      // Ustida dialog (route) yo'q. Navigator.of bog'liqlik yozmaydi — taymerdan
+      // chaqirish xavfsiz.
+      !Navigator.of(context, rootNavigator: true).canPop();
 
   /// Staff held the logo: fetch now rather than wait for the timer.
   Future<void> _staffRefresh() => runStaffRefresh(
@@ -120,6 +150,17 @@ class _KioskRootState extends State<KioskRoot> with WindowListener {
     await windowManager.destroy();
   }
 
+  /// «Chiqish» tugmasini uzoq bosish: xodim sozlamalari (parolsiz). Ichidagi
+  /// «Chiqish» odatdagi parolli chiqishga o'tadi.
+  Future<void> _openSettings() async {
+    if (_settingsOpen || _exitPrompt) return;
+    _settingsOpen = true;
+    _markActive();
+    final exit = await showKioskSettings(context, onActivity: _markActive);
+    _settingsOpen = false;
+    if (exit && mounted) await _confirmExit();
+  }
+
   Future<void> _confirmExit() async {
     // Leaving kiosk mode is staff-only: it takes the exit password.
     _exitPrompt = true;
@@ -133,6 +174,8 @@ class _KioskRootState extends State<KioskRoot> with WindowListener {
       await windowManager.setFullScreen(false);
       await windowManager.hide();
       await restoreWindowsShell();
+      // KioskLauncher ostida ishlasa — ilovani qayta ochmasin (ADR-037).
+      KioskUpdater.notifyExitRequested();
       await windowManager.destroy();
     }
   }
@@ -235,6 +278,7 @@ class _KioskRootState extends State<KioskRoot> with WindowListener {
                         palette: palette,
                         lang: _state.lang,
                         onExit: _confirmExit,
+                        onSettings: _openSettings,
                         orgName: _state.content.office
                                 ?.shortName[_state.lang] ??
                             '',

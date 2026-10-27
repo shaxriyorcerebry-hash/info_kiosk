@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/update/kiosk_update_ui.dart';
 import 'config.dart';
 import 'kiosk_root.dart';
 import 'kiosk_scroll_behavior.dart';
@@ -17,6 +18,10 @@ class KioskApp extends StatelessWidget {
       // A finger drags the lists here, whatever pointer kind the touch overlay
       // claims to be — see [KioskScrollBehavior].
       scrollBehavior: const KioskScrollBehavior(),
+      // Yangilanish ogohlantirishi har qanday dialog ustida chiqadi va har
+      // teginish yangilovchiga «faoliyat» deb yetkaziladi (ADR-037).
+      builder: (context, child) =>
+          KioskUpdateOverlay(child: child ?? const SizedBox.shrink()),
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: AppColors.brand),
         scaffoldBackgroundColor: AppColors.homeGradient.first,

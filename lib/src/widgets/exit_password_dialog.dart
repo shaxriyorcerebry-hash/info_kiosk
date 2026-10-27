@@ -11,7 +11,10 @@ import 'pressable.dart';
 ///
 /// The kiosk is a touch panel that may have no keyboard attached, so the
 /// dialog carries its own on-screen keys; a physical keyboard works too.
-Future<bool> askExitPassword(BuildContext context) async {
+Future<bool> askExitPassword(
+  BuildContext context, {
+  @visibleForTesting bool Function(String input)? verify,
+}) async {
   final ok = await showGeneralDialog<bool>(
     context: context,
     barrierDismissible: true,
@@ -29,7 +32,9 @@ Future<bool> askExitPassword(BuildContext context) async {
         opacity: anim.value,
         child: Transform.scale(
           scale: 0.9 + curved.value * 0.1,
-          child: const _ExitPasswordDialog(),
+          child: _ExitPasswordDialog(
+            verify: verify ?? KioskConfig.isExitPassword,
+          ),
         ),
       );
     },
@@ -38,7 +43,11 @@ Future<bool> askExitPassword(BuildContext context) async {
 }
 
 class _ExitPasswordDialog extends StatefulWidget {
-  const _ExitPasswordDialog();
+  const _ExitPasswordDialog({required this.verify});
+
+  /// Parol tekshiruvi — standart holatda xeshlar solishtiriladi
+  /// ([KioskConfig.isExitPassword]); parolning o'zi kodda yo'q.
+  final bool Function(String input) verify;
 
   @override
   State<_ExitPasswordDialog> createState() => _ExitPasswordDialogState();
@@ -75,7 +84,7 @@ class _ExitPasswordDialogState extends State<_ExitPasswordDialog>
   }
 
   void _submit() {
-    if (_ctrl.text == KioskConfig.exitPassword) {
+    if (widget.verify(_ctrl.text)) {
       Navigator.of(context).pop(true);
       return;
     }

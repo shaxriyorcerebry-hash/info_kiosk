@@ -5,22 +5,27 @@ import 'pressable.dart';
 
 /// Small, discreet exit affordance shown inside the footer. It is a door icon
 /// on a blue-and-white badge; tapping it asks for confirmation before leaving
-/// kiosk mode.
+/// kiosk mode. Holding it opens the staff settings panel (updates).
 ///
 /// The badge stays visually small — it is for staff, not for visitors, and it
 /// should not invite curious taps — but it sits inside a 56×56 touch area, so
 /// a member of staff hits it first time without aiming. It carries no tooltip:
-/// a tooltip only appears on hover or long-press, neither of which happens on
-/// a kiosk screen, and the door icon says enough on its own.
+/// a tooltip only appears on hover or long-press — and long-press is taken by
+/// the settings panel — and the door icon says enough on its own.
 class ExitButton extends StatelessWidget {
-  const ExitButton({super.key, required this.onTap});
+  const ExitButton({super.key, required this.onTap, this.onLongPress});
 
   final VoidCallback onTap;
+
+  /// Uzoq bosish — xodim uchun «Sozlamalar» paneli (parolsiz). Oddiy bosish
+  /// avvalgidek parol bilan chiqishni so'raydi.
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
     return Pressable(
       onTap: onTap,
+      onLongPress: onLongPress,
       pressedScale: 0.88,
       child: SizedBox(
         width: 56,
