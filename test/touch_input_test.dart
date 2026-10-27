@@ -161,12 +161,14 @@ void main() {
   });
 
   group('exit button', () {
-    testWidgets('sits in a 56x56 touch area and fires on tap', (tester) async {
-      var tapped = false;
+    testWidgets('sits in a 56x56 touch area; tap does nothing, hold fires', (
+      tester,
+    ) async {
+      var held = false;
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: Center(child: ExitButton(onTap: () => tapped = true)),
+            body: Center(child: ExitButton(onLongPress: () => held = true)),
           ),
         ),
       );
@@ -176,13 +178,15 @@ void main() {
       expect(tester.getSize(find.byType(ExitButton)), const Size(56, 56));
 
       await tester.tap(find.byType(ExitButton));
-      expect(tapped, isTrue);
+      expect(held, isFalse); // bir bosish — hech narsa
+      await tester.longPress(find.byType(ExitButton));
+      expect(held, isTrue);
     });
 
     testWidgets('carries no tooltip', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
-          home: Scaffold(body: Center(child: ExitButton(onTap: () {}))),
+          home: Scaffold(body: Center(child: ExitButton(onLongPress: () {}))),
         ),
       );
       // A tooltip needs a hover or a long press; a kiosk visitor does neither,

@@ -8,9 +8,9 @@ import 'package:info_kiosk/src/widgets/footer_bar.dart';
 import 'package:info_kiosk/src/widgets/settings_panel.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-/// Pastki tasma, kiosk root'idagi kabi ulangan: oddiy bosish — parolli chiqish,
-/// uzoq bosish — sozlamalar paneli (parolsiz), paneldagi «Chiqish» — yana
-/// parolli chiqish.
+/// Pastki tasma, kiosk root'idagi kabi ulangan: oddiy bosish — hech narsa,
+/// uzoq bosish — sozlamalar paneli (parolsiz), paneldagi «Chiqish» — parolli
+/// chiqish.
 Future<void> _pumpFooter(
   WidgetTester tester, {
   required List<String> log,
@@ -28,7 +28,6 @@ Future<void> _pumpFooter(
             child: FooterBar(
               palette: Palette.light,
               lang: Lang.uz,
-              onExit: () => log.add('parolli chiqish'),
               onSettings: () async {
                 log.add('sozlamalar');
                 if (await showKioskSettings(context)) log.add('parolli chiqish');
@@ -59,14 +58,16 @@ void main() {
     ));
   });
 
-  testWidgets('oddiy bosish — avvalgidek parolli chiqish', (tester) async {
+  testWidgets('oddiy bosish — hech narsa (parol ham, panel ham ochilmaydi)', (
+    tester,
+  ) async {
     final log = <String>[];
     await _pumpFooter(tester, log: log);
 
     await tester.tap(find.byType(ExitButton));
     await tester.pumpAndSettle();
 
-    expect(log, ['parolli chiqish']);
+    expect(log, isEmpty);
     expect(find.text('Sozlamalar'), findsNothing);
   });
 
